@@ -14,3 +14,4 @@ if __name__ == '__main__':
     dfs = process.load_data(params, clean_data_path)
     process.fig_1(dfs, params, output_path)
     process.fig_2(dfs, params, output_path)
+    process.fig_3_to_8(dfs, params, output_path)
