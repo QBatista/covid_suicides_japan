@@ -5,24 +5,35 @@ at an annual frequency from e-Stat.
 """
 
 import requests
-import os
 
-# Parameters
-analysis_date = '210803'
 
-# Create directory if it doesn't exist
-file_path = "../raw_data/" + analysis_date + '/'
+# TODO(QBatista): PEP8
 
-try:
-    os.stat(file_path)
-except:
-    os.mkdir(file_path)
+URL = "https://www.e-stat.go.jp/en/stat-search/file-download?statInfId=000031982751&fileKind=1"
 
-csv_url = "https://www.e-stat.go.jp/en/stat-search/file-download?statInfId=000031982751&fileKind=1"
 
-req = requests.get(csv_url)
-url_content = req.content
-csv_file = open(file_path + 'suicide_annual.csv', 'wb')
+def suicide_annual(params, output_path):
+    # Unpack parameters
+    analysis_date = params['analysis_date']
 
-csv_file.write(url_content)
-csv_file.close()
+    file_path = output_path + analysis_date + '/'
+
+    req = requests.get(URL)
+    url_content = req.content
+    csv_file = open(file_path + 'suicide_annual.csv', 'wb')
+
+    csv_file.write(url_content)
+    csv_file.close()
+
+
+if __name__ == '__main__':
+    import yaml
+
+    params_path = '../parameters.yml'
+    output_path = "../raw_data/"
+
+    # Load parameters
+    with open(params_path) as file:
+        params = yaml.load(file, Loader=yaml.FullLoader)
+
+    suicide_annual(params, output_path)
