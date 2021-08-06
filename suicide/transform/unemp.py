@@ -37,7 +37,7 @@ def unemp(params, load_path, save_path):
 
     group = df_unemp.groupby(df_unemp.index.year)
     mask = (group.count() == 12).iloc[:, 0]
-    df_unemp_annual = group.mean()[mask]
+    df_unemp_annual = group.mean()[mask].round(1)
     df_unemp_annual.index = pd.to_datetime(df_unemp_annual.index.astype(str))
 
     # Save data

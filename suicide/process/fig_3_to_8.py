@@ -67,18 +67,19 @@ def fig_3_to_8(dfs, params, output_path):
     factor = params['factor']
 
     # Figure 3
+    start_date = '2008-01'
     path = output_path + analysis_date + '/fig_3_ts_scatter_total.pdf'
-    fig = unemp_suicide_plot(df_suicide_monthly, df_unemp_monthly, data_type='total')
+    fig = unemp_suicide_plot(df_suicide_monthly[start_date:], df_unemp_monthly[start_date:], data_type='total')
     fig.write_image(path, format='pdf')
 
     # Figure 4
     path = output_path + analysis_date + '/fig_4_ts_scatter_male.pdf'
-    fig = unemp_suicide_plot(df_suicide_monthly, df_unemp_monthly, data_type='male')
+    fig = unemp_suicide_plot(df_suicide_monthly[start_date:], df_unemp_monthly[start_date:], data_type='male')
     fig.write_image(path, format='pdf')
 
     # Figure 5
     path = output_path + analysis_date + '/fig_5_ts_scatter_female.pdf'
-    fig = unemp_suicide_plot(df_suicide_monthly, df_unemp_monthly, data_type='female')
+    fig = unemp_suicide_plot(df_suicide_monthly[start_date:], df_unemp_monthly[start_date:], data_type='female')
     fig.write_image(path, format='pdf')
 
     # Figure 6
