@@ -1,0 +1,5 @@
+from .test_forecast import test_forecast
+from .test_unemp_annual import test_unemp_annual
+from .test_unemp_monthly import test_unemp_monthly
+from .test_suicide_annual import test_suicide_annual
+from .test_suicide_monthly import test_suicide_monthly
