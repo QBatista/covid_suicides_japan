@@ -245,7 +245,7 @@ def fig_model(dfs, params, output_path):
 
             df_key_numbers.loc[date_start, (data_type, )] = compute_key_numbers(pre_covid_preds, post_covid_preds, df_suicide_monthly, data_type)
 
-    df_key_numbers.to_html(output_path + analysis_date + '/key_numbers.html')
+    df_key_numbers.to_csv(output_path + analysis_date + '/key_numbers.csv')
 
 
 if __name__ == '__main__':
