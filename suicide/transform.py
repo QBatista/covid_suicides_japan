@@ -16,6 +16,11 @@ if __name__ == '__main__':
 
     print("Start transforming data for " + params['analysis_date'] + '.')
 
+    directory = clean_data_path + analysis_date + '/'
+    if not os.path.exists(directory):
+        print("Create directory for " + analysis_date + ": done.")
+        os.makedirs(directory)
+
     transform.unemp(params, raw_data_path, clean_data_path)
     print("Clean unemployment data: done.")
 

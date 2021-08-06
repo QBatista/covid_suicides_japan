@@ -17,6 +17,14 @@ if __name__ == '__main__':
     dfs = process.load_data(params, clean_data_path)
     print("Load data: done.")
 
+    directory = output_path + analysis_date + '/'
+    if not os.path.exists(directory):
+        print("Create directory for " + analysis_date + ": done.")
+        os.makedirs(directory)
+        os.makedirs(directory + 'unemp/')
+        os.makedirs(directory + 'unemp/present/')
+        os.makedirs(directory + 'unemp/future/')
+
     process.fig_1(dfs, params, output_path)
     print("Generate figure 1: done.")
 
