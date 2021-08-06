@@ -4,41 +4,47 @@ A script to clean the raw monthly suicide data.
 """
 
 import pandas as pd
-import os
 
 
-# Parameters
-analysis_date = '210803'
+def suicide_monthly(params, load_path, save_path):
+    analysis_date = params['analysis_date']
 
-# Create directory if it doesn't exist
-file_path = "../clean_data/" + analysis_date + '/'
+    load_path += analysis_date + '/'
+    save_path += analysis_date + '/'
 
-try:
-    os.stat(file_path)
-except:
-    os.mkdir(file_path)
+    df = pd.read_csv(load_path + 'suicide_monthly.csv', index_col=0)
 
-# Load data
-load_path = '../raw_data/' + analysis_date + '/'
-df = pd.read_csv(load_path + 'suicide_monthly.csv', index_col=0)
+    # Transpose data
+    df = df.T
 
-# Transpose data
-df = df.T
+    # Rename the columns
+    df.columns = ['total', 'male', 'female']
 
-# Rename the columns
-df.columns = ['total', 'male', 'female']
+    # Drop missing values
+    df.dropna(inplace=True)
 
-# Drop missing values
-df.dropna(inplace=True)
+    # Convert index to datetime with "month start" frequency
+    df.index = pd.to_datetime(df.index).to_period('M').to_timestamp()
 
-# Convert index to datetime with "month start" frequency
-df.index = pd.to_datetime(df.index).to_period('M').to_timestamp()
+    # Convert data to numeric values
+    df = df.apply(lambda x: pd.to_numeric(x.str.replace('[, ]', '', regex=True)))
 
-# Convert data to numeric values
-df = df.apply(lambda x: pd.to_numeric(x.str.replace('[, ]', '', regex=True)))
+    # Rename index
+    df.index.rename('date', inplace=True)
 
-# Rename index
-df.index.rename('date', inplace=True)
+    # Save data
+    df.to_csv(save_path + 'suicide_monthly.csv')
 
-# Save data
-df.to_csv(file_path + 'suicide_monthly.csv')
+
+if __name__ == '__main__':
+    import yaml
+
+    params_path = '../parameters.yml'
+    save_path = '../clean_data/'
+    load_path = '../raw_data/'
+
+    # Load parameters
+    with open(params_path) as file:
+        params = yaml.load(file, Loader=yaml.FullLoader)
+
+    suicide_monthly(params, load_path, save_path)
