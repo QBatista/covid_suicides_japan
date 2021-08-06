@@ -6,8 +6,6 @@ A script to audit the forecast data.
 import petl as etl
 
 
-# TODO(QBatista): PEP8
-
 def test_forecast(params, load_path):
     analysis_date = params['analysis_date']
     load_path += analysis_date + '/forecast.csv'
@@ -17,7 +15,8 @@ def test_forecast(params, load_path):
     constraints = [{'name': 'forecast_date_valid', 'field': 'date',
                     'test': etl.dateparser('%Y-%m-%d')},
                    {'name': 'forecast_pre_covid_nonneg',
-                    'field': 'pre_covid', 'assertion': lambda x: float(x) >= 0},
+                    'field': 'pre_covid',
+                    'assertion': lambda x: float(x) >= 0},
                    {'name': 'forecast_post_covid_nonneg',
                     'field': 'post_covid',
                     'assertion': lambda x: x == '' or float(x) >= 0}]

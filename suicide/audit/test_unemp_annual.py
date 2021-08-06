@@ -6,8 +6,6 @@ A script to audit the annual unemployment data.
 import petl as etl
 
 
-# TODO(QBatista): PEP8
-
 def test_unemp_annual(params, load_path):
     analysis_date = params['analysis_date']
 

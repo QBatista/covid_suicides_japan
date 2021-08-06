@@ -1,9 +1,11 @@
+"""
+A script to audit the clean data.
 
-import audit
+"""
+
 import yaml
+import audit
 
-
-# TODO(QBatista): PEP8
 
 if __name__ == '__main__':
     params_path = 'parameters.yml'

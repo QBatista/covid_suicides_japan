@@ -2,3 +2,4 @@ pandas
 tabula
 bs4
 urllib
+petl

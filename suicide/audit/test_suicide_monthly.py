@@ -6,14 +6,12 @@ A script to audit the monthly suicide data.
 import petl as etl
 
 
-# TODO(QBatista): PEP8
-
 def test_suicide_monthly(params, load_path):
     analysis_date = params['analysis_date']
 
     header = ('date', 'total', 'male', 'female')
 
-    valid_assert_map = lambda x: float(x[0]) == float(x[1]) + float(x[2])
+    def valid_assert_map(x): return float(x[0]) == float(x[1]) + float(x[2])
 
     constraints = [{'name': 'suicide_monthly_date_valid', 'field': 'date',
                     'test': etl.dateparser('%Y-%m-%d')},
