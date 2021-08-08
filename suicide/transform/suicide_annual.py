@@ -6,16 +6,16 @@ A script to clean the raw annual suicide data.
 import pandas as pd
 
 
-# TODO(QBatista): PEP8
-
 def suicide_annual(params, load_path, save_path):
+    # Unpack arguments
     analysis_date = params['analysis_date']
 
     save_path += analysis_date + '/'
     load_path += analysis_date + '/'
 
+    # Load raw data
     df = pd.read_csv(load_path + 'suicide_annual.csv',
-                     encoding= 'unicode_escape',
+                     encoding='unicode_escape',
                      skiprows=14)
 
     # Select year/type and suicide columns
@@ -24,7 +24,7 @@ def suicide_annual(params, load_path, save_path):
     # Rename columns
     df_suicide.columns = ['date', 'suicides']
 
-    # Find types
+    # Find types (total, male, female)
     type_data = df_suicide.date[df_suicide.suicides.isna()].str.lower()
 
     # Construct a columns of types
@@ -33,7 +33,8 @@ def suicide_annual(params, load_path, save_path):
     df_suicide.dropna(inplace=True)
 
     # Pivot data
-    df_suicide = df_suicide.pivot(index='date', columns='type', values='suicides')
+    df_suicide = df_suicide.pivot(index='date', columns='type',
+                                  values='suicides')
     df_suicide = df_suicide[['total', 'male', 'female']]
 
     # Use datetime index

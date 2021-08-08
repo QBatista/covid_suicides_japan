@@ -3,8 +3,6 @@ import transform
 import yaml
 
 
-# TODO(QBatista): PEP8
-
 if __name__ == '__main__':
     params_path = 'parameters.yml'
     raw_data_path = 'raw_data/'
