@@ -7,8 +7,6 @@ at an annual frequency from e-Stat.
 import requests
 
 
-# TODO(QBatista): PEP8
-
 URL = "https://www.e-stat.go.jp/en/stat-search/file-download?statInfId=000031982751&fileKind=1"
 
 

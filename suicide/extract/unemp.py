@@ -9,9 +9,8 @@ Ref: https://www.stat.go.jp/data/roudou/longtime/03roudou.html#hyo_1
 import requests
 
 
-# TODO(QBatista): PEP8
-
 URL = 'https://www.stat.go.jp/data/roudou/longtime/zuhyou/lt01-a10.xlsx'
+
 
 def unemp(params, output_path):
     # Unpack parameters

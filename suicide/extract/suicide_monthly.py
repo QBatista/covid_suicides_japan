@@ -16,8 +16,6 @@ import urllib.request as req
 from urllib.parse import urljoin
 
 
-# TODO(QBatista): PEP8
-
 URL = 'https://www.npa.go.jp/publications/statistics/safetylife/jisatsu.html'
 
 
