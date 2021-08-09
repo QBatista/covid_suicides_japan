@@ -1,3 +1,7 @@
+"""
+A script to generate output files.
+
+"""
 
 import process
 import yaml
@@ -17,6 +21,7 @@ if __name__ == '__main__':
     dfs = process.load_data(params, clean_data_path)
     print("Load data: done.")
 
+    # Create directories if they don't exist
     directory = output_path + analysis_date + '/'
     if not os.path.exists(directory):
         print("Create directory for " + analysis_date + ": done.")
@@ -25,6 +30,7 @@ if __name__ == '__main__':
         os.makedirs(directory + 'unemp/present/')
         os.makedirs(directory + 'unemp/future/')
 
+    # Generate figures
     process.fig_1(dfs, params, output_path)
     print("Generate figure 1: done.")
 

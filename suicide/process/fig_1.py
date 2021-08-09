@@ -21,29 +21,31 @@ def fig_1(dfs, params, output_path):
     analysis_date = params['analysis_date']
     factor = params['factor']
 
-    # Figure 1
+    # Create figure
     data_start = '2020-03'
     last_date = df_unemp_monthly.index[-1]
 
     fig = go.Figure()
 
     # Plot actual unemployment
-    fig.add_trace(go.Scatter(x=df_forecast_monthly[data_start:].index,
-                             y=df_forecast_monthly.post_covid[data_start:],
+    monthly_data = df_forecast_monthly[data_start:]
+    quarterly_data = df_forecast_quarterly[data_start:]
+    quarterly_data.index = quarterly_data.index.shift(periods=31, freq='D')
+
+    fig.add_trace(go.Scatter(x=monthly_data.index,
+                             y=monthly_data.post_covid,
                              name='Actual Unemployment',
-                            marker=dict(color='green', size=8)))
+                             marker=dict(color='green', size=8)))
 
     # Plot pre-covid projections
-    x_Q = df_forecast_quarterly[data_start:].index.shift(periods=31, freq='D')
-    y_Q = df_forecast_quarterly.pre_covid[data_start:]
-    fig.add_trace(go.Scatter(x=x_Q,
-                             y=y_Q,
+    fig.add_trace(go.Scatter(x=quarterly_data.index,
+                             y=quarterly_data.pre_covid,
                              mode='markers',
                              showlegend=False,
                              marker=dict(color='blue', size=8)))
 
-    fig.add_trace(go.Scatter(x=df_forecast_monthly[data_start:].index,
-                             y=df_forecast_monthly.pre_covid[data_start:],
+    fig.add_trace(go.Scatter(x=monthly_data.index,
+                             y=monthly_data.pre_covid,
                              name='Pre-Covid Projections',
                              marker=dict(color='blue')))
 
@@ -51,6 +53,7 @@ def fig_1(dfs, params, output_path):
     fig.update_layout(yaxis_title='Unemployment Rate',
                       xaxis_range=[data_start, last_date])
 
+    # Save figure
     write_path = output_path + analysis_date + '/fig_1_unemp_present.pdf'
     fig.write_image(write_path, format='pdf')
 

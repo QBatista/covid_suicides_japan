@@ -32,7 +32,7 @@ def load_forecast_data(df_unemp_monthly, params, clean_data_path):
     factor = params['factor']
 
     # Load forecast data
-    forecast_path = clean_data_path + analysis_date  + '/forecast.csv'
+    forecast_path = clean_data_path + analysis_date + '/forecast.csv'
     df_forecast_quarterly = pd.read_csv(forecast_path, index_col=0)
     idx = pd.to_datetime(df_forecast_quarterly.index)
     idx = idx.to_period('Q').to_timestamp()
@@ -40,12 +40,13 @@ def load_forecast_data(df_unemp_monthly, params, clean_data_path):
 
     # Extend index to December 2024
     idx = pd.date_range(start=df_forecast_quarterly.index[0],
-                       end='2024-12-31',
-                       freq=df_forecast_quarterly.index.freq)
+                        end='2024-12-31',
+                        freq=df_forecast_quarterly.index.freq)
     df_forecast_quarterly = df_forecast_quarterly.reindex(idx)
 
     # Resample to monthly frequency
-    df_forecast_monthly = df_forecast_quarterly.to_period('Q').resample('1M').asfreq()
+    df_forecast_monthly = df_forecast_quarterly.to_period('Q').resample('1M')
+    df_forecast_monthly = df_forecast_monthly.asfreq()
 
     # Shift so that interpolation node is middle month
     df_forecast_monthly = df_forecast_monthly.shift()

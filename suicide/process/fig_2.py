@@ -19,42 +19,47 @@ def fig_2(dfs, params, output_path):
     analysis_date = params['analysis_date']
     factor = params['factor']
 
-    # Figure 2
+    # Create figure
     data_start = '2020-03'
     last_date = df_unemp_monthly.index[-1]
 
     fig = go.Figure()
 
     # Plot actual unemployment
-    fig.add_trace(go.Scatter(x=df_forecast_monthly[data_start:last_date].index,
-                             y=df_forecast_monthly.post_covid[data_start:last_date],
+    monthly_data = df_forecast_monthly[data_start:]
+    quarterly_data = df_forecast_quarterly[data_start:]
+    quarterly_data.index = quarterly_data.index.shift(periods=31, freq='D')
+
+    # Plot actual unemployment
+    fig.add_trace(go.Scatter(x=monthly_data[:last_date].index,
+                             y=monthly_data[:last_date].post_covid,
                              name='Actual Unemployment',
-                            marker=dict(color='green', size=8)))
+                             marker=dict(color='green', size=8)))
 
     # Plot post-covid projections
-    fig.add_trace(go.Scatter(x=df_forecast_monthly[last_date:].index,
-                             y=df_forecast_monthly.post_covid[last_date:],
+    fig.add_trace(go.Scatter(x=monthly_data[last_date:].index,
+                             y=monthly_data[last_date:].post_covid,
                              mode='lines',
                              name='Post-Covid Projections'))
 
-    fig.add_trace(go.Scatter(x=df_forecast_quarterly[last_date:].index.shift(periods=31, freq='D'),
-                             y=df_forecast_quarterly.post_covid[last_date:],
-                            mode='markers',
-                            name='Post-Covid Quarterly Data',
-                            marker=dict(color='red', size=8),
-                            showlegend=False))
+    fig.add_trace(go.Scatter(x=quarterly_data[last_date:].index,
+                             y=quarterly_data[last_date:].post_covid,
+                             mode='markers',
+                             name='Post-Covid Quarterly Data',
+                             marker=dict(color='red', size=8),
+                             showlegend=False))
 
     # Plot pre-covid projections
-    fig.add_trace(go.Scatter(x=df_forecast_quarterly[data_start:].index.shift(periods=31, freq='D'),
-                             y=df_forecast_quarterly.pre_covid[data_start:],
-                            mode='markers',
-                            showlegend=False,
-                            marker=dict(color='blue', size=8)))
+    fig.add_trace(go.Scatter(x=quarterly_data.index,
+                             y=quarterly_data.pre_covid,
+                             mode='markers',
+                             showlegend=False,
+                             marker=dict(color='blue', size=8)))
 
-    fig.add_trace(go.Scatter(x=df_forecast_monthly[data_start:].index,
-                             y=df_forecast_monthly.pre_covid[data_start:],
-                            name='Pre-Covid Projections',
-                            marker=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=monthly_data[data_start:].index,
+                             y=monthly_data[data_start:].pre_covid,
+                             name='Pre-Covid Projections',
+                             marker=dict(color='blue')))
 
     # Add dashed line at last available date
     fig.add_vline(x=last_date, line_dash='dash')
