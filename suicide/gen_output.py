@@ -3,6 +3,7 @@ A script to generate output files.
 
 """
 
+import os
 import process
 import yaml
 
@@ -16,7 +17,8 @@ if __name__ == '__main__':
     with open(params_path) as file:
         params = yaml.load(file, Loader=yaml.FullLoader)
 
-    print("Start generating figures for " + params['analysis_date'] + '.')
+    analysis_date = params['analysis_date']
+    print("Start generating figures for " + analysis_date + '.')
 
     dfs = process.load_data(params, clean_data_path)
     print("Load data: done.")

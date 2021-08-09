@@ -117,8 +117,8 @@ def gen_preds_ts_plot(pre_covid_preds, post_covid_preds, df_suicide, date_end,
                              mode='markers',
                              marker=dict(color='red')))
 
-    fig.add_trace(go.Scatter(x=data_pre.index,
-                             y=data_pre,
+    fig.add_trace(go.Scatter(x=pre_data.index,
+                             y=pre_data,
                              name='Expected (Pre-Covid)',
                              marker=dict(color='blue')))
 
@@ -151,7 +151,7 @@ def compute_key_numbers(pre_covid_preds, post_covid_preds, df_suicide,
     # Filter data
     suicide_data = df_suicide[covid_start:][data_type]
     pre_data = pre_covid_preds[covid_start:]
-    post_data = post_data[covid_start:]
+    post_data = post_covid_preds[covid_start:]
 
     # Compute differences
     actual_diff = np.nansum(suicide_data - pre_data)
@@ -162,7 +162,7 @@ def compute_key_numbers(pre_covid_preds, post_covid_preds, df_suicide,
     return actual_diff, future_diff, diff_up_to_present
 
 
-def check_reg_res(res):
+def check_reg_res(res, date_start):
     # Test that the number of observations matches the expected
     # number of observations
     expected_nobs = ((2020 - int(date_start[:4])) * 12 + 2)
@@ -203,7 +203,7 @@ def fig_model(dfs, params, output_path):
     train_date_end = '2020-02'
 
     # Construct data for regression
-    same_data_end_date = pd.to_timestamp('2020-02')
+    same_data_end_date = pd.to_datetime('2020-02')
     diff_data_start = same_data_end_date + pd.Timedelta(1, unit='MS')
 
     # Use same data for pre and post covid paths (actual unemployment)
@@ -250,7 +250,7 @@ def fig_model(dfs, params, output_path):
             # Run regression
             model = sm.regression.linear_model.OLS(y_train, X_train)
             res = model.fit()
-            check_reg_res(res)
+            check_reg_res(res, date_start)
 
             # Generate predictions
             pre_covid_preds = res.predict(X_pre_covid).rename('pred')

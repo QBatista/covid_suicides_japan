@@ -1,4 +1,9 @@
+"""
+A script to clean raw data.
 
+"""
+
+import os
 import transform
 import yaml
 
@@ -12,7 +17,8 @@ if __name__ == '__main__':
     with open(params_path) as file:
         params = yaml.load(file, Loader=yaml.FullLoader)
 
-    print("Start transforming data for " + params['analysis_date'] + '.')
+    analysis_date = params['analysis_date']
+    print("Start transforming data for " + analysis_date + '.')
 
     directory = clean_data_path + analysis_date + '/'
     if not os.path.exists(directory):
