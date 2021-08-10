@@ -282,7 +282,7 @@ def fig_model(dfs, params, output_path):
 
             dfs = (pre_preds, post_preds, df_suicide_monthly)
 
-            date_end = '2021-06'
+            date_end = df_suicide_monthly.index[-1]
             args = gen_args(dfs, date_start, date_end, data_type, pre_conf_int)
             fig = gen_preds_by_month_plot(*args[:-1])
             path = p_start + '/unemp/present/unemp_by_month_' + p_end
@@ -294,13 +294,12 @@ def fig_model(dfs, params, output_path):
             path = p_start + '/unemp/present/unemp_ts_' + p_end
             fig.write_image(path, format='pdf')
 
-            date_end = '2024-12'
+            date_end += pd.Timedelta(366*3, unit='D')
             args = gen_args(dfs, date_start, date_end, data_type, pre_conf_int)
             fig = gen_preds_by_month_plot(*args[:-1])
             path = p_start + '/unemp/future/unemp_by_month_' + p_end
             fig.write_image(path, format='pdf')
 
-            plot_start = '2019-01'
             args = gen_args(dfs, plot_start, date_end, data_type, pre_conf_int)
             fig = gen_preds_ts_plot(*args)
             path = p_start + '/unemp/future/unemp_ts_' + p_end
