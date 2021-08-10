@@ -13,11 +13,9 @@ from plotly.subplots import make_subplots
 
 
 # TODO(QBatista):
-# 1. Break down `fig_model` into multiple functions
-# 2. Generalize structure of output files to prepare for age-gender analysis
-# 3. Add the age-gender analysis
-# 4. Fix warnings
-# 5. Unit testing
+# 1. Add the age-gender analysis
+# 2. Fix warnings
+# 3. Unit testing
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'

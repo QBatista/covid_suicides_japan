@@ -8,6 +8,33 @@ import process
 import yaml
 
 
+def create_directories(directory):
+    os.makedirs(directory + 'predictions/')
+    os.makedirs(directory + 'figures/annual/')
+
+    forecast_types = ('agg_forecast', 'group_forecast')
+    data_types = ('total', 'male', 'female')
+    age_groups = ('10_19', '20_29', '30_39', '40_49', '50_59', '60_69',
+                  '70_79', '80_99')
+    fig_types = ('present', 'full')
+    dates_start = ('2008-01',
+                   '2009-01',
+                   '2010-01',
+                   '2011-01',
+                   '2012-01')
+
+    dirs = [directory + 'figures/' + forecast_type + '/' + data_type + '/' +
+            age_group + '/' + fig_type + '/' + date_start + '/'
+            for forecast_type in forecast_types
+            for data_type in data_types
+            for age_group in age_groups
+            for fig_type in fig_types
+            for date_start in dates_start]
+
+    for d in dirs:
+        os.makedirs(d)
+
+
 if __name__ == '__main__':
     params_path = 'parameters.yml'
     output_path = 'output/'
@@ -27,10 +54,7 @@ if __name__ == '__main__':
     directory = output_path + analysis_date + '/'
     if not os.path.exists(directory):
         print("Create directory for " + analysis_date + ": done.")
-        os.makedirs(directory)
-        os.makedirs(directory + 'unemp/')
-        os.makedirs(directory + 'unemp/present/')
-        os.makedirs(directory + 'unemp/future/')
+        create_directories(directory)
 
     # Generate figures
     process.fig_1(dfs, params, output_path)
