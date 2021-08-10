@@ -4,6 +4,7 @@ A script to generate figures for the model's predictions.
 """
 
 
+import calendar
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
@@ -12,13 +13,14 @@ from plotly.subplots import make_subplots
 
 
 # TODO(QBatista):
-# 1. Round "key numbers"
-# 2. Use next three years instead of until 2024
-# 3. Add evolution plots (diff red dots blue line, diff green line blue line
+# 1. Use next three years instead of until 2024
+# 2. Add evolution plots (diff red dots blue line, diff green line blue line
 #    to present, diff green line blue line total)
-# 4. Simplify functions arguments
-# 5. Generalize structure of output files to prepare for age-gender analysis
-# 6. Add the age-gender analysis
+# 3. Simplify functions arguments
+# 4. Generalize structure of output files to prepare for age-gender analysis
+# 5. Add the age-gender analysis
+# 6. Fix warnings
+# 7. Unit testing
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
@@ -26,16 +28,12 @@ COEF_MSG = 'Number of coefficients is different from the expected' + \
            ' number of coefficients'
 
 
-def gen_preds_by_month_plot(pre_covid_preds, post_covid_preds, df_suicide,
-                            date_start, date_end, data_type):
-    # Filter dates
-    suicide_data = df_suicide[date_start:date_end]
-    pre_data = pre_covid_preds[date_start:date_end]
-    post_data = post_covid_preds[date_start:date_end]
+def gen_preds_by_month_plot(pre_preds, post_preds, suicide):
 
     # Manual groupby for better plotting
-    month_inds = sorted(suicide_data.index.month.unique())
-    fig = make_subplots(4, 3, subplot_titles=month_inds)
+    month_inds = suicide.index.month.unique().sort_values()
+    month_names = [calendar.month_name[val] for val in month_inds]
+    fig = make_subplots(4, 3, subplot_titles=month_names)
 
     # Add traces for each month
     for month_idx in month_inds:
@@ -44,13 +42,13 @@ def gen_preds_by_month_plot(pre_covid_preds, post_covid_preds, df_suicide,
         col_idx = (month_idx - 1) % 3 + 1
         showlegend = True if (row_idx == 1) & (col_idx == 1) else False
 
-        suicide_month = suicide_data[suicide_data.index.month == month_idx]
-        pre_month = pre_data[pre_data.index.month == month_idx]
-        post_month = post_data[post_data.index.month == month_idx]
+        suicide_month = suicide[suicide.index.month == month_idx]
+        pre_month = pre_preds[pre_preds.index.month == month_idx]
+        post_month = post_preds[post_preds.index.month == month_idx]
 
         # Actual suicides
         fig.add_trace(go.Scatter(x=suicide_month.index,
-                                 y=suicide_month[data_type],
+                                 y=suicide_month,
                                  name='Observed',
                                  mode='markers',
                                  marker=dict(color='red'),
@@ -82,37 +80,25 @@ def gen_preds_by_month_plot(pre_covid_preds, post_covid_preds, df_suicide,
 
     # Update size and title
     temp = ' observed versus expected number of suicides by month over time'
-    title = data_type.capitalize() + temp
-    fig.update_layout(height=1200,
-                      width=900,
-                      title=title)
+    title = suicide.name.capitalize() + temp
+    fig.update_layout(height=1200, width=900, title=title)
 
     return fig
 
 
-def gen_preds_ts_plot(pre_covid_preds, post_covid_preds, df_suicide, date_end,
-                      data_type, pre_conf_int, post_conf_int):
-    date_start = '2019-01'
-
-    # Filter data
-    suicide_data = df_suicide[date_start:date_end]
-    pre_data = pre_covid_preds[date_start:date_end]
-    post_data = post_covid_preds[date_start:date_end]
-
-    mask = pre_covid_preds.index.isin(pre_data.index)
-
+def gen_preds_ts_plot(pre_preds, post_preds, suicide, pre_conf_int):
     fig = go.Figure()
 
     # Confidence intervals
-    fig.add_trace(go.Scatter(x=pre_data.index,
-                             y=pre_conf_int[mask, 0],  # Lower
+    fig.add_trace(go.Scatter(x=pre_preds.index,
+                             y=pre_conf_int[:, 0],  # Lower
                              fillcolor='rgba(0,0,255,0.1)',
                              line=dict(color='rgba(0,0,255,0.)'),
                              hoverinfo="skip",
                              showlegend=False))
 
-    fig.add_trace(go.Scatter(x=pre_data.index,
-                             y=pre_conf_int[mask, 1],  # Upper
+    fig.add_trace(go.Scatter(x=pre_preds.index,
+                             y=pre_conf_int[:, 1],  # Upper
                              fill='tonexty',
                              fillcolor='rgba(0,0,255,0.1)',
                              line=dict(color='rgba(0,0,255,0.)'),
@@ -120,19 +106,19 @@ def gen_preds_ts_plot(pre_covid_preds, post_covid_preds, df_suicide, date_end,
                              showlegend=False))
 
     # Lines
-    fig.add_trace(go.Scatter(x=suicide_data.index,
-                             y=suicide_data[data_type],
+    fig.add_trace(go.Scatter(x=suicide.index,
+                             y=suicide,
                              name='Observed',
                              mode='markers',
                              marker=dict(color='red')))
 
-    fig.add_trace(go.Scatter(x=pre_data.index,
-                             y=pre_data,
+    fig.add_trace(go.Scatter(x=pre_preds.index,
+                             y=pre_preds,
                              name='Expected (Pre-Covid)',
                              marker=dict(color='blue')))
 
-    fig.add_trace(go.Scatter(x=pre_data.index,
-                             y=post_data,
+    fig.add_trace(go.Scatter(x=pre_preds.index,
+                             y=post_preds,
                              name='Expected (Post-Covid)',
                              marker=dict(color='green')))
 
@@ -146,19 +132,18 @@ def gen_preds_ts_plot(pre_covid_preds, post_covid_preds, df_suicide, date_end,
 
     # Update title
     temp = ' observed versus expected number of suicides'
-    title = data_type.capitalize() + temp
+    title = suicide.name.capitalize() + temp
     fig.update_layout(title=title)
 
     return fig
 
 
-def compute_key_numbers(pre_covid_preds, post_covid_preds, df_suicide,
-                        data_type):
+def compute_key_numbers(pre_covid_preds, post_covid_preds, suicide):
     covid_start = '2020-03'
-    date_end = df_suicide.index[-1]
+    date_end = suicide.index[-1]
 
     # Filter data
-    suicide_data = df_suicide[covid_start:][data_type]
+    suicide_data = suicide[covid_start:]
     pre_data = pre_covid_preds[covid_start:]
     post_data = post_covid_preds[covid_start:]
 
@@ -169,6 +154,20 @@ def compute_key_numbers(pre_covid_preds, post_covid_preds, df_suicide,
     future_diff = total_diff - diff_up_to_present
 
     return actual_diff, future_diff, diff_up_to_present
+
+
+def gen_args(dfs, date_start, date_end, data_type, pre_conf_int):
+     # Unpack arguments
+     pre_preds, post_preds, df_suicide_monthly = dfs
+
+     # Prepare args
+     mask = pre_preds.index.isin(pre_preds[date_start:date_end].index)
+     args = (pre_preds[date_start:date_end],
+             post_preds[date_start:date_end],
+             df_suicide_monthly.loc[date_start:date_end, data_type],
+             pre_conf_int[mask, :])
+
+     return args
 
 
 def check_reg_res(res, date_start):
@@ -271,8 +270,8 @@ def fig_model(dfs, params, output_path):
             check_reg_res(res, date_start)
 
             # Generate predictions
-            pre_covid_preds = res.predict(X_pre_covid).rename('pred')
-            post_covid_preds = res.predict(X_post_covid).rename('pred')
+            pre_preds = res.predict(X_pre_covid).rename('pred')
+            post_preds = res.predict(X_post_covid).rename('pred')
 
             pre_conf_int = res.get_prediction(X_pre_covid).conf_int(alpha=α)
             post_conf_int = res.get_prediction(X_post_covid).conf_int(alpha=α)
@@ -281,41 +280,41 @@ def fig_model(dfs, params, output_path):
             p_start = output_path + analysis_date
             p_end = data_type + '_' + date_start + '.pdf'
 
+            dfs = (pre_preds, post_preds, df_suicide_monthly)
+
             date_end = '2021-06'
-            fig = gen_preds_by_month_plot(pre_covid_preds, post_covid_preds,
-                                          df_suicide_monthly, date_start,
-                                          date_end, data_type)
+            args = gen_args(dfs, date_start, date_end, data_type, pre_conf_int)
+            fig = gen_preds_by_month_plot(*args[:-1])
             path = p_start + '/unemp/present/unemp_by_month_' + p_end
             fig.write_image(path, format='pdf')
 
-            fig = gen_preds_ts_plot(pre_covid_preds, post_covid_preds,
-                                    df_suicide_monthly, date_end, data_type,
-                                    pre_conf_int, post_conf_int)
+            plot_start = '2019-01'
+            args = gen_args(dfs, plot_start, date_end, data_type, pre_conf_int)
+            fig = gen_preds_ts_plot(*args)
             path = p_start + '/unemp/present/unemp_ts_' + p_end
             fig.write_image(path, format='pdf')
 
             date_end = '2024-12'
-            fig = gen_preds_by_month_plot(pre_covid_preds, post_covid_preds,
-                                          df_suicide_monthly, date_start,
-                                          date_end, data_type)
+            args = gen_args(dfs, date_start, date_end, data_type, pre_conf_int)
+            fig = gen_preds_by_month_plot(*args[:-1])
             path = p_start + '/unemp/future/unemp_by_month_' + p_end
             fig.write_image(path, format='pdf')
 
-            fig = gen_preds_ts_plot(pre_covid_preds, post_covid_preds,
-                                    df_suicide_monthly, date_end, data_type,
-                                    pre_conf_int, post_conf_int)
+            plot_start = '2019-01'
+            args = gen_args(dfs, plot_start, date_end, data_type, pre_conf_int)
+            fig = gen_preds_ts_plot(*args)
             path = p_start + '/unemp/future/unemp_ts_' + p_end
             fig.write_image(path, format='pdf')
 
             # Record key numbers
             df_key_numbers.loc[date_start, (data_type, )] = \
-                compute_key_numbers(pre_covid_preds, post_covid_preds,
-                                    df_suicide_monthly, data_type)
+                compute_key_numbers(*args[:-1])
 
-            df_pre_preds.loc[:, (date_start, data_type)] = pre_covid_preds
-            df_post_preds.loc[:, (date_start, data_type)] = post_covid_preds
+            df_pre_preds.loc[:, (date_start, data_type)] = pre_preds
+            df_post_preds.loc[:, (date_start, data_type)] = post_preds
 
-    df_key_numbers.to_csv(output_path + analysis_date + '/key_numbers.csv')
+    save_path = output_path + analysis_date + '/key_numbers.csv'
+    df_key_numbers.round().astype(int).to_csv(save_path)
     df_pre_preds.to_csv(output_path + analysis_date + '/pre_preds.csv')
     df_post_preds.to_csv(output_path + analysis_date + '/post_preds.csv')
 
