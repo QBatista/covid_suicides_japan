@@ -11,6 +11,15 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
+# TODO(QBatista):
+# 1. Round "key numbers"
+# 2. Use next three years instead of until 2024
+# 3. Add evolution plots (diff red dots blue line, diff green line blue line
+#    to present, diff green line blue line total)
+# 4. Simplify functions arguments
+# 5. Generalize structure of output files to prepare for age-gender analysis
+# 6. Add the age-gender analysis
+
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
 COEF_MSG = 'Number of coefficients is different from the expected' + \
@@ -241,6 +250,15 @@ def fig_model(dfs, params, output_path):
     df_key_numbers = pd.DataFrame(columns=cols,
                                   index=pd.to_datetime(dates_start))
 
+    cols = pd.MultiIndex.from_tuples(tuple((date_start, data_type))
+                                         for date_start in dates_start
+                                           for data_type in data_types
+                                           ).sort_values()
+
+
+    df_pre_preds = pd.DataFrame(columns=cols)
+    df_post_preds = pd.DataFrame(columns=cols)
+
     for date_start in dates_start:
         for data_type in data_types:
             # Filter data
@@ -294,7 +312,12 @@ def fig_model(dfs, params, output_path):
                 compute_key_numbers(pre_covid_preds, post_covid_preds,
                                     df_suicide_monthly, data_type)
 
+            df_pre_preds.loc[:, (date_start, data_type)] = pre_covid_preds
+            df_post_preds.loc[:, (date_start, data_type)] = post_covid_preds
+
     df_key_numbers.to_csv(output_path + analysis_date + '/key_numbers.csv')
+    df_pre_preds.to_csv(output_path + analysis_date + '/pre_preds.csv')
+    df_post_preds.to_csv(output_path + analysis_date + '/post_preds.csv')
 
 
 if __name__ == '__main__':
