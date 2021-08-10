@@ -42,5 +42,5 @@ if __name__ == '__main__':
     process.fig_3_to_8(dfs, params, output_path)
     print("Generate figures 3 to 8: done.")
 
-    process.fig_model(dfs, params, output_path)
+    process.run_model(dfs, params, output_path)
     print("Generate model figures: done.")

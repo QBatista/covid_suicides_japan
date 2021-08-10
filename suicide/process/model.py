@@ -174,27 +174,28 @@ def plot_explained_unemp_ts(pre_preds, post_preds, data_type):
     return fig
 
 
-def compute_key_numbers(pre_covid_preds, post_covid_preds, suicide):
+def compute_key_numbers(pre_preds, post_preds, suicide):
     covid_start = '2020-03'
-    date_end = suicide.index[-1]
+    present_date = suicide.index[-1]
+    date_end = present_date + pd.Timedelta(366*3, unit='D')
 
     # Filter data
-    suicide_data = suicide[covid_start:]
-    pre_data = pre_covid_preds[covid_start:]
-    post_data = post_covid_preds[covid_start:]
+    pre_data = pre_preds[covid_start:date_end]
+    post_data = post_preds[covid_start:date_end]
+    suicide_data = suicide[covid_start:date_end]
 
     # Compute differences
-    actual_diff = np.nansum(suicide_data - pre_data)
-    total_diff = np.nansum(post_data - pre_data)
-    diff_up_to_present = np.nansum(post_data[:date_end] - pre_data[:date_end])
-    future_diff = total_diff - diff_up_to_present
+    diff_actual = np.nansum(suicide_data - pre_data)
+    diff_total = np.nansum(post_data - pre_data)
+    diff_present = np.nansum(post_data[:present_date] - pre_data[:present_date])
+    diff_future = diff_total - diff_present
 
-    return actual_diff, future_diff, diff_up_to_present
+    return diff_actual, diff_future, diff_present
 
 
-def gen_args(dfs, date_start, date_end, data_type, pre_conf_int):
+def gen_args(df_suicide_monthly, preds, date_start, date_end, data_type):
      # Unpack arguments
-     pre_preds, post_preds, df_suicide_monthly = dfs
+     pre_preds, post_preds, pre_conf_int = preds
 
      # Prepare args
      mask = pre_preds.index.isin(pre_preds[date_start:date_end].index)
@@ -220,32 +221,119 @@ def check_reg_res(res, date_start):
         raise ValueError(COEF_MSG)
 
 
-def fig_model(dfs, params, output_path):
+def gen_preds(df_suicide_monthly, Xs, data_type, dates, α):
     # Unpack arguments
-    (df_unemp_monthly,
-     df_unemp_annual,
-     df_forecast_quarterly,
-     df_forecast_monthly,
-     df_suicide_monthly,
-     df_suicide_annual) = dfs
-    analysis_date = params['analysis_date']
-    factor = params['factor']
+    X_pre_covid, X_post_covid = Xs
+    date_start, date_end = dates
 
-    # Parameters
-    α = 0.25
+    # Filter data
+    y_train = df_suicide_monthly[data_type][date_start:date_end]
+    X_train = X_pre_covid[date_start:date_end]
 
-    dates_start = ('2008-01',
-                   '2009-01',
-                   '2010-01',
-                   '2011-01',
-                   '2012-01')
+    # Run regression
+    model = sm.regression.linear_model.OLS(y_train, X_train)
+    res = model.fit()
+    check_reg_res(res, date_start)
 
-    data_types = ('total', 'male', 'female')
-    key_nb_types = ('actual_minus_pre_covid', 'post_minus_pre_future',
-                    'post_minus_pre_present', )
+    # Generate predictions
+    pre_preds = res.predict(X_pre_covid).rename('pred')
+    post_preds = res.predict(X_post_covid).rename('pred')
 
-    train_date_end = '2020-02'
+    pre_conf_int = res.get_prediction(X_pre_covid).conf_int(alpha=α)
 
+    return pre_preds, post_preds, pre_conf_int
+
+
+def gen_figs(df_suicide_monthly, preds, output_path, analysis_date, date_start,
+             data_type):
+    # Unpack arguments
+    pre_preds, post_preds, pre_conf_int = preds
+
+    # Generate figures
+    p_start = output_path + analysis_date
+    p_end = data_type + '_' + date_start + '.pdf'
+
+    dfs = (pre_preds, post_preds, df_suicide_monthly)
+
+    date_end = df_suicide_monthly.index[-1]
+    args = gen_args(df_suicide_monthly, preds, date_start, date_end, data_type)
+    fig = plot_preds_by_month(*args[:-1])
+    path = p_start + '/unemp/present/unemp_by_month_' + p_end
+    fig.write_image(path, format='pdf')
+
+    plot_start = '2019-01'
+    args = gen_args(df_suicide_monthly, preds, plot_start, date_end, data_type)
+    fig = plot_preds_ts(*args)
+    path = p_start + '/unemp/present/unemp_ts_' + p_end
+    fig.write_image(path, format='pdf')
+
+    fig = plot_induced_suicides_ts(args[0], args[2])
+    path = p_start + '/unemp/present/induced_suicides_ts_' + p_end
+    fig.write_image(path, format='pdf')
+
+    fig = plot_explained_unemp_ts(args[0], args[1], data_type)
+    path = p_start + '/unemp/present/explained_unemp_ts_' + p_end
+    fig.write_image(path, format='pdf')
+
+    date_end += pd.Timedelta(366*3, unit='D')
+    args = gen_args(df_suicide_monthly, preds, date_start, date_end, data_type)
+    fig = plot_preds_by_month(*args[:-1])
+    path = p_start + '/unemp/future/unemp_by_month_' + p_end
+    fig.write_image(path, format='pdf')
+
+    args = gen_args(df_suicide_monthly, preds, plot_start, date_end, data_type)
+    fig = plot_preds_ts(*args)
+    path = p_start + '/unemp/future/unemp_ts_' + p_end
+    fig.write_image(path, format='pdf')
+
+    fig = plot_explained_unemp_ts(args[0], args[1], data_type)
+    path = p_start + '/unemp/future/explained_unemp_ts_' + p_end
+    fig.write_image(path, format='pdf')
+
+
+def record_output(dfs_store, df_suicide_monthly, preds, date_start, data_type):
+    # Unpack arguments
+    df_key_numbers, df_pre_preds, df_post_preds = dfs_store
+    pre_preds, post_preds, pre_conf_int = preds
+
+    # Record
+    df_key_numbers.loc[date_start, (data_type, )] = \
+        compute_key_numbers(pre_preds, post_preds, df_suicide_monthly[data_type])
+    df_pre_preds.loc[:, (date_start, data_type)] = pre_preds
+    df_post_preds.loc[:, (date_start, data_type)] = post_preds
+
+
+def save_recorded_output(dfs_store, output_path, analysis_date):
+    # Unpack arguments
+    df_key_numbers, df_pre_preds, df_post_preds = dfs_store
+
+    # Save
+    save_path = output_path + analysis_date + '/key_numbers.csv'
+    df_key_numbers.round().astype(int).to_csv(save_path)
+    df_pre_preds.to_csv(output_path + analysis_date + '/pre_preds.csv')
+    df_post_preds.to_csv(output_path + analysis_date + '/post_preds.csv')
+
+
+def initialize_dfs_store(data_types, key_nb_types, dates_start):
+    cols = pd.MultiIndex.from_tuples(tuple((data_type, key_nb_type)
+                                           for data_type in data_types
+                                           for key_nb_type in key_nb_types))
+    df_key_numbers = pd.DataFrame(columns=cols,
+                                  index=pd.to_datetime(dates_start))
+
+    cols = pd.MultiIndex.from_tuples(tuple((date_start, data_type))
+                                         for date_start in dates_start
+                                           for data_type in data_types
+                                           ).sort_values()
+
+
+    df_pre_preds = pd.DataFrame(columns=cols)
+    df_post_preds = pd.DataFrame(columns=cols)
+
+    return df_key_numbers, df_pre_preds, df_post_preds
+
+
+def construct_Xs(df_unemp_monthly, df_forecast_monthly):
     # Construct data for regression
     same_data_end_date = pd.to_datetime('2020-02')
     diff_data_start = same_data_end_date + pd.Timedelta(1, unit='MS')
@@ -279,91 +367,51 @@ def fig_model(dfs, params, output_path):
     X_pre_covid = X1.join(X2_pre_covid)
     X_post_covid = X1.join(X2_post_covid)
 
-    cols = pd.MultiIndex.from_tuples(tuple((data_type, key_nb_type)
-                                           for data_type in data_types
-                                           for key_nb_type in key_nb_types))
-    df_key_numbers = pd.DataFrame(columns=cols,
-                                  index=pd.to_datetime(dates_start))
+    Xs = (X_pre_covid, X_post_covid)
 
-    cols = pd.MultiIndex.from_tuples(tuple((date_start, data_type))
-                                         for date_start in dates_start
-                                           for data_type in data_types
-                                           ).sort_values()
+    return Xs
 
 
-    df_pre_preds = pd.DataFrame(columns=cols)
-    df_post_preds = pd.DataFrame(columns=cols)
+def run_model(dfs, params, output_path):
+    # Unpack arguments
+    (df_unemp_monthly,
+     df_unemp_annual,
+     df_forecast_quarterly,
+     df_forecast_monthly,
+     df_suicide_monthly,
+     df_suicide_annual) = dfs
+    analysis_date = params['analysis_date']
+    factor = params['factor']
+
+    # Parameters
+    dates_start = ('2008-01',
+                   '2009-01',
+                   '2010-01',
+                   '2011-01',
+                   '2012-01')
+    data_types = ('total', 'male', 'female')
+    key_nb_types = ('actual_minus_pre_covid', 'post_minus_pre_future',
+                    'post_minus_pre_present', )
+    α = 0.25
+    train_date_end = '2020-02'
+
+    # Run model
+    Xs = construct_Xs(df_unemp_monthly, df_forecast_monthly)
+    dfs_store = initialize_dfs_store(data_types, key_nb_types, dates_start)
 
     for date_start in dates_start:
         for data_type in data_types:
-            # Filter data
-            y_train = df_suicide_monthly[data_type][date_start:train_date_end]
-            X_train = X_pre_covid[date_start:train_date_end]
+            dates = (date_start, train_date_end)
 
-            # Run regression
-            model = sm.regression.linear_model.OLS(y_train, X_train)
-            res = model.fit()
-            check_reg_res(res, date_start)
+            preds = gen_preds(df_suicide_monthly, Xs, data_type, dates, α)
 
-            # Generate predictions
-            pre_preds = res.predict(X_pre_covid).rename('pred')
-            post_preds = res.predict(X_post_covid).rename('pred')
+            gen_figs(df_suicide_monthly, preds, output_path, analysis_date,
+                     date_start, data_type)
 
-            pre_conf_int = res.get_prediction(X_pre_covid).conf_int(alpha=α)
-            post_conf_int = res.get_prediction(X_post_covid).conf_int(alpha=α)
+            record_output(dfs_store, df_suicide_monthly, preds, date_start,
+                          data_type)
 
-            # Generate figures
-            p_start = output_path + analysis_date
-            p_end = data_type + '_' + date_start + '.pdf'
-
-            dfs = (pre_preds, post_preds, df_suicide_monthly)
-
-            date_end = df_suicide_monthly.index[-1]
-            args = gen_args(dfs, date_start, date_end, data_type, pre_conf_int)
-            fig = plot_preds_by_month(*args[:-1])
-            path = p_start + '/unemp/present/unemp_by_month_' + p_end
-            fig.write_image(path, format='pdf')
-
-            plot_start = '2019-01'
-            args = gen_args(dfs, plot_start, date_end, data_type, pre_conf_int)
-            fig = plot_preds_ts(*args)
-            path = p_start + '/unemp/present/unemp_ts_' + p_end
-            fig.write_image(path, format='pdf')
-
-            fig = plot_induced_suicides_ts(args[0], args[2])
-            path = p_start + '/unemp/present/induced_suicides_ts_' + p_end
-            fig.write_image(path, format='pdf')
-
-            fig = plot_explained_unemp_ts(args[0], args[1], data_type)
-            path = p_start + '/unemp/present/explained_unemp_ts_' + p_end
-            fig.write_image(path, format='pdf')
-
-            date_end += pd.Timedelta(366*3, unit='D')
-            args = gen_args(dfs, date_start, date_end, data_type, pre_conf_int)
-            fig = plot_preds_by_month(*args[:-1])
-            path = p_start + '/unemp/future/unemp_by_month_' + p_end
-            fig.write_image(path, format='pdf')
-
-            args = gen_args(dfs, plot_start, date_end, data_type, pre_conf_int)
-            fig = plot_preds_ts(*args)
-            path = p_start + '/unemp/future/unemp_ts_' + p_end
-            fig.write_image(path, format='pdf')
-
-            fig = plot_explained_unemp_ts(args[0], args[1], data_type)
-            path = p_start + '/unemp/future/explained_unemp_ts_' + p_end
-            fig.write_image(path, format='pdf')
-
-            # Record key numbers
-            df_key_numbers.loc[date_start, (data_type, )] = \
-                compute_key_numbers(*args[:-1])
-
-            df_pre_preds.loc[:, (date_start, data_type)] = pre_preds
-            df_post_preds.loc[:, (date_start, data_type)] = post_preds
-
-    save_path = output_path + analysis_date + '/key_numbers.csv'
-    df_key_numbers.round().astype(int).to_csv(save_path)
-    df_pre_preds.to_csv(output_path + analysis_date + '/pre_preds.csv')
-    df_post_preds.to_csv(output_path + analysis_date + '/post_preds.csv')
+    save_recorded_output(dfs_store, output_path, analysis_date)
 
 
 if __name__ == '__main__':
@@ -379,4 +427,4 @@ if __name__ == '__main__':
         params = yaml.load(file, Loader=yaml.FullLoader)
 
     dfs = load_data(params, clean_data_path)
-    fig_model(dfs, params, output_path)
+    run_model(dfs, params, output_path)
