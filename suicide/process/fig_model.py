@@ -13,14 +13,11 @@ from plotly.subplots import make_subplots
 
 
 # TODO(QBatista):
-# 1. Use next three years instead of until 2024
-# 2. Add evolution plots (diff red dots blue line, diff green line blue line
-#    to present, diff green line blue line total)
-# 3. Simplify functions arguments
-# 4. Generalize structure of output files to prepare for age-gender analysis
-# 5. Add the age-gender analysis
-# 6. Fix warnings
-# 7. Unit testing
+# 1. Break down `fig_model` into multiple functions
+# 2. Generalize structure of output files to prepare for age-gender analysis
+# 3. Add the age-gender analysis
+# 4. Fix warnings
+# 5. Unit testing
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
@@ -28,7 +25,7 @@ COEF_MSG = 'Number of coefficients is different from the expected' + \
            ' number of coefficients'
 
 
-def gen_preds_by_month_plot(pre_preds, post_preds, suicide):
+def plot_preds_by_month(pre_preds, post_preds, suicide):
 
     # Manual groupby for better plotting
     month_inds = suicide.index.month.unique().sort_values()
@@ -86,7 +83,7 @@ def gen_preds_by_month_plot(pre_preds, post_preds, suicide):
     return fig
 
 
-def gen_preds_ts_plot(pre_preds, post_preds, suicide, pre_conf_int):
+def plot_preds_ts(pre_preds, post_preds, suicide, pre_conf_int):
     fig = go.Figure()
 
     # Confidence intervals
@@ -133,6 +130,45 @@ def gen_preds_ts_plot(pre_preds, post_preds, suicide, pre_conf_int):
     # Update title
     temp = ' observed versus expected number of suicides'
     title = suicide.name.capitalize() + temp
+    fig.update_layout(title=title)
+
+    return fig
+
+
+def plot_induced_suicides_ts(pre_preds, suicide):
+    covid_start = '2020-03'
+    date_end = suicide.index[-1]
+
+    data = suicide[covid_start:] - pre_preds[covid_start:date_end]
+
+    fig = go.Figure()
+
+    # Confidence intervals
+    fig.add_trace(go.Bar(x=data.index,
+                         y=data,
+                         showlegend=False))
+
+    temp = ' covid-induced suicides over time'
+    title = suicide.name.capitalize() + temp
+    fig.update_layout(title=title)
+
+    return fig
+
+
+def plot_explained_unemp_ts(pre_preds, post_preds, data_type):
+    covid_start = '2020-03'
+
+    data = post_preds[covid_start:] - pre_preds[covid_start:]
+
+    fig = go.Figure()
+
+    # Confidence intervals
+    fig.add_trace(go.Bar(x=data.index,
+                         y=data,
+                         showlegend=False))
+
+    temp = ' number of suicides explained by unemployment over time'
+    title = data_type.capitalize() + temp
     fig.update_layout(title=title)
 
     return fig
@@ -284,25 +320,37 @@ def fig_model(dfs, params, output_path):
 
             date_end = df_suicide_monthly.index[-1]
             args = gen_args(dfs, date_start, date_end, data_type, pre_conf_int)
-            fig = gen_preds_by_month_plot(*args[:-1])
+            fig = plot_preds_by_month(*args[:-1])
             path = p_start + '/unemp/present/unemp_by_month_' + p_end
             fig.write_image(path, format='pdf')
 
             plot_start = '2019-01'
             args = gen_args(dfs, plot_start, date_end, data_type, pre_conf_int)
-            fig = gen_preds_ts_plot(*args)
+            fig = plot_preds_ts(*args)
             path = p_start + '/unemp/present/unemp_ts_' + p_end
+            fig.write_image(path, format='pdf')
+
+            fig = plot_induced_suicides_ts(args[0], args[2])
+            path = p_start + '/unemp/present/induced_suicides_ts_' + p_end
+            fig.write_image(path, format='pdf')
+
+            fig = plot_explained_unemp_ts(args[0], args[1], data_type)
+            path = p_start + '/unemp/present/explained_unemp_ts_' + p_end
             fig.write_image(path, format='pdf')
 
             date_end += pd.Timedelta(366*3, unit='D')
             args = gen_args(dfs, date_start, date_end, data_type, pre_conf_int)
-            fig = gen_preds_by_month_plot(*args[:-1])
+            fig = plot_preds_by_month(*args[:-1])
             path = p_start + '/unemp/future/unemp_by_month_' + p_end
             fig.write_image(path, format='pdf')
 
             args = gen_args(dfs, plot_start, date_end, data_type, pre_conf_int)
-            fig = gen_preds_ts_plot(*args)
+            fig = plot_preds_ts(*args)
             path = p_start + '/unemp/future/unemp_ts_' + p_end
+            fig.write_image(path, format='pdf')
+
+            fig = plot_explained_unemp_ts(args[0], args[1], data_type)
+            path = p_start + '/unemp/future/explained_unemp_ts_' + p_end
             fig.write_image(path, format='pdf')
 
             # Record key numbers
