@@ -14,11 +14,10 @@ def create_directories(directory):
 
     forecast_types = ('agg_forecast', 'group_forecast')
     data_types = ('total', 'male', 'female')
-    age_groups = ('10_19', '20_29', '30_39', '40_49', '50_59', '60_69',
-                  '70_79', '80_99')
+    age_groups = ('0_19', '20_29', '30_39', '40_49', '50_59', '60_69',
+                  '70_79', '80_99', 'total')
     fig_types = ('present', 'full')
-    dates_start = ('2008-01',
-                   '2009-01',
+    dates_start = ('2009-01',
                    '2010-01',
                    '2011-01',
                    '2012-01')

@@ -219,13 +219,15 @@ def check_reg_res(res, date_start):
         raise ValueError(COEF_MSG)
 
 
-def gen_preds(df_suicide_monthly, Xs, data_type, dates, α):
+def gen_preds(suicide, unemp, forecasts, dates, α):
     # Unpack arguments
-    X_pre_covid, X_post_covid = Xs
     date_start, date_end = dates
 
+    # Construct training data
+    X_pre_covid, X_post_covid = construct_Xs(unemp, forecasts)
+
     # Filter data
-    y_train = df_suicide_monthly[data_type][date_start:date_end]
+    y_train = suicide[date_start:date_end]
     X_train = X_pre_covid[date_start:date_end]
 
     # Run regression
@@ -331,7 +333,7 @@ def initialize_dfs_store(data_types, key_nb_types, dates_start):
     return df_key_numbers, df_pre_preds, df_post_preds
 
 
-def construct_Xs(df_unemp_monthly, df_forecast_monthly):
+def construct_Xs(unemp, forecasts):
     # Construct data for regression
     same_data_end_date = pd.to_datetime('2020-02')
     diff_data_start = same_data_end_date + pd.Timedelta(1, unit='MS')
@@ -339,13 +341,12 @@ def construct_Xs(df_unemp_monthly, df_forecast_monthly):
     # Use same data for pre and post covid paths (actual unemployment)
     # until same_data_end_date
     temp_df = pd.DataFrame(columns=['post_covid', 'pre_covid'],
-                           index=df_unemp_monthly[:same_data_end_date].index)
-    temp_df.post_covid = df_unemp_monthly[:same_data_end_date].values
-    temp_df.pre_covid = df_unemp_monthly[:same_data_end_date].values
+                           index=unemp[:same_data_end_date].index)
+    temp_df.post_covid = unemp[:same_data_end_date].values
+    temp_df.pre_covid = unemp[:same_data_end_date].values
 
     # Combine with "pre-covid" and "post-covid"' paths data
-    df_unemp_wforecast = pd.concat([temp_df,
-                                    df_forecast_monthly[diff_data_start:]])
+    df_unemp_wforecast = pd.concat([temp_df, forecasts[diff_data_start:]])
 
     # Get year indices
     years = df_unemp_wforecast.index.year
@@ -382,8 +383,7 @@ def run_model(dfs, params, output_path):
     factor = params['factor']
 
     # Parameters
-    dates_start = ('2008-01',
-                   '2009-01',
+    dates_start = ('2009-01',
                    '2010-01',
                    '2011-01',
                    '2012-01')
@@ -394,14 +394,17 @@ def run_model(dfs, params, output_path):
     train_date_end = '2020-02'
 
     # Run model
-    Xs = construct_Xs(df_unemp_monthly, df_forecast_monthly)
     dfs_store = initialize_dfs_store(data_types, key_nb_types, dates_start)
 
     for date_start in dates_start:
         for data_type in data_types:
             dates = (date_start, train_date_end)
 
-            preds = gen_preds(df_suicide_monthly, Xs, data_type, dates, α)
+            suicide = df_suicide_monthly[data_type]
+            unemp = df_unemp_monthly.total
+            forecasts = df_forecast_monthly
+
+            preds = gen_preds(suicide, unemp, forecasts, dates, α)
 
             gen_figs(df_suicide_monthly, preds, output_path, analysis_date,
                      date_start, data_type)
