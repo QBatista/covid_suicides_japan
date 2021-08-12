@@ -9,24 +9,23 @@ import yaml
 
 
 def create_directories(directory):
-    os.makedirs(directory + 'predictions/')
-    os.makedirs(directory + 'figures/annual/')
+    os.makedirs(directory + 'data_visualization/')
 
     forecast_types = ('agg_forecast', 'group_forecast')
     data_types = ('total', 'male', 'female')
-    age_groups = ('0_19', '20_29', '30_39', '40_49', '50_59', '60_69',
-                  '70_79', '80_99', 'total')
-    fig_types = ('present', 'full')
+    groups = ('0_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79',
+              '80_99', 'total')
     dates_start = ('2009-01',
                    '2010-01',
                    '2011-01',
                    '2012-01')
+    fig_types = ('present', 'full')
 
-    dirs = [directory + 'figures/' + forecast_type + '/' + data_type + '/' +
-            age_group + '/' + fig_type + '/' + date_start + '/'
+    dirs = [directory + 'model/' + forecast_type + '/' + data_type + '/' +
+            group + '/' + date_start + '/' + fig_type + '/'
             for forecast_type in forecast_types
             for data_type in data_types
-            for age_group in age_groups
+            for group in groups
             for fig_type in fig_types
             for date_start in dates_start]
 
