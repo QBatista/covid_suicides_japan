@@ -244,59 +244,53 @@ def gen_preds(suicide, unemp, forecasts, dates, α):
     return pre_preds, post_preds, pre_conf_int
 
 
-def gen_figs(suicide, preds, output_path, analysis_date, date_start,
-             data_type, group):
-    # Generate figures
-    p_start = output_path + analysis_date + '/model/agg_forecast/' \
-     + data_type + '/' + group + '/' + date_start + '/'
+def gen_figs(suicide, preds, path, analysis_date, date_start, data_type,
+             group):
 
     date_end = suicide.index[-1]
     args = filter_dates(suicide, preds, date_start, date_end)
     fig = plot_preds_by_month(*args[:-1])
-    path = p_start + '/present/unemp_by_month.pdf'
-    fig.write_image(path, format='pdf')
+    full_path = path + '/present/unemp_by_month.pdf'
+    fig.write_image(full_path, format='pdf')
 
     plot_start = '2019-01'
     args = filter_dates(suicide, preds, plot_start, date_end)
     fig = plot_preds_ts(*args)
-    path = p_start + '/present/unemp_ts.pdf'
-    fig.write_image(path, format='pdf')
+    full_path = path + '/present/unemp_ts.pdf'
+    fig.write_image(full_path, format='pdf')
 
     fig = plot_induced_suicides_ts(args[0], args[2])
-    path = p_start + '/present/induced_suicides_ts.pdf'
-    fig.write_image(path, format='pdf')
+    full_path = path + '/present/induced_suicides_ts.pdf'
+    fig.write_image(full_path, format='pdf')
 
     fig = plot_explained_unemp_ts(args[0], args[1], data_type)
-    path = p_start + '/present/explained_unemp_ts.pdf'
-    fig.write_image(path, format='pdf')
+    full_path = path + '/present/explained_unemp_ts.pdf'
+    fig.write_image(full_path, format='pdf')
 
     date_end += pd.Timedelta(366*3, unit='D')
     args = filter_dates(suicide, preds, date_start, date_end)
     fig = plot_preds_by_month(*args[:-1])
-    path = p_start + '/full/unemp_by_month.pdf'
-    fig.write_image(path, format='pdf')
+    full_path = path + '/full/unemp_by_month.pdf'
+    fig.write_image(full_path, format='pdf')
 
     args = filter_dates(suicide, preds, plot_start, date_end)
     fig = plot_preds_ts(*args)
-    path = p_start + '/full/unemp_ts.pdf'
-    fig.write_image(path, format='pdf')
+    full_path = path + '/full/unemp_ts.pdf'
+    fig.write_image(full_path, format='pdf')
 
     fig = plot_explained_unemp_ts(args[0], args[1], data_type)
-    path = p_start + '/full/explained_unemp_ts.pdf'
-    fig.write_image(path, format='pdf')
+    full_path = path + '/full/explained_unemp_ts.pdf'
+    fig.write_image(full_path, format='pdf')
 
 
-def save_output(suicide, preds, output_path, analysis_date,
-         date_start, data_type, group):
-
-    p_start = output_path + analysis_date + '/model/agg_forecast/' \
-     + data_type + '/' + group + '/' + date_start + '/'
+def save_output(suicide, preds, path, analysis_date, date_start, data_type,
+                group):
 
     # Unpack arguments
     pre_preds, post_preds, pre_conf_int = preds
 
-    pre_preds.to_csv(p_start + '/pre_preds.csv')
-    post_preds.to_csv(p_start + '/post_preds.csv')
+    pre_preds.to_csv(path + '/pre_preds.csv')
+    post_preds.to_csv(path + '/post_preds.csv')
 
     key_nb = compute_key_numbers(pre_preds, post_preds, suicide)
 
@@ -304,7 +298,7 @@ def save_output(suicide, preds, output_path, analysis_date,
                     'post_minus_pre_present')
 
     df_key_nb = pd.DataFrame(key_nb, index=key_nb_types)
-    df_key_nb.round().to_csv(p_start + '/key_nb.csv', header=False)
+    df_key_nb.round().to_csv(path + '/key_nb.csv', header=False)
 
 
 def initialize_dfs_store(data_types, key_nb_types, dates_start):
@@ -388,22 +382,53 @@ def run_model(dfs, params, output_path):
     α = 0.25
     train_date_end = '2020-02'
 
+
+
     for date_start in dates_start:
         dates = (date_start, train_date_end)
 
+        # Aggregate forecasts
         for data_type in data_types:
             for group in groups:
+                path = output_path + analysis_date + '/model/agg_forecast/' \
+                 + data_type + '/' + group + '/' + date_start + '/'
+
                 suicide = df_suicide_dist[data_type][group]
                 unemp = df_unemp_dist.total.total
                 forecasts = df_forecast_total
 
                 preds = gen_preds(suicide, unemp, forecasts, dates, α)
 
-                gen_figs(suicide, preds, output_path, analysis_date,
+                gen_figs(suicide, preds, path, analysis_date,
                          date_start, data_type, group)
 
-                save_output(suicide, preds, output_path, analysis_date,
+                save_output(suicide, preds, path, analysis_date,
                             date_start, data_type, group)
+
+        # Age-gender-specific forecasts
+        for data_type in data_types:
+            for group in groups:
+                path = output_path + analysis_date + '/model/group_forecast/' \
+                 + data_type + '/' + group + '/' + date_start + '/'
+
+                suicide = df_suicide_dist[data_type][group]
+                unemp = df_unemp_dist[data_type][group]
+
+                X = sm.tsa.add_trend(df_unemp_dist.total.total[:'2020-02'],
+                                     trend='ct')
+                y = unemp[:'2020-02']
+                model = sm.regression.linear_model.OLS(y, X)
+                res = model.fit()
+                forecasts = df_forecast_total.apply(lambda x: res.predict(sm.tsa.add_trend(x, trend='ct')))
+
+                preds = gen_preds(suicide, unemp, forecasts, dates, α)
+
+                gen_figs(suicide, preds, path, analysis_date,
+                         date_start, data_type, group)
+
+                save_output(suicide, preds, path, analysis_date,
+                            date_start, data_type, group)
+
 
 
 if __name__ == '__main__':
