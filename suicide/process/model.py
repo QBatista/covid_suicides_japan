@@ -3,7 +3,6 @@ A script to generate figures for the model's predictions.
 
 """
 
-
 import os
 import calendar
 import pandas as pd
@@ -14,14 +13,18 @@ from plotly.subplots import make_subplots
 
 
 # TODO(QBatista):
-# 1. Sanity check the results
-# 2. Fix figure titles
-# 3. Unit testing
-# 4. Remove duplicate parameters
-# 5. Clean up the code
-# 6. Switch agg_forecast -> aggregate, group_forecast -> group
-# 7. Move the plotting functions to a separate module
-# 8. Life expectancy analysis
+# 1. Fix figure titles
+# 2. Unit testing
+# 3. Remove duplicate parameters
+# 4. Clean up the code
+# 5. Move the plotting functions to a separate module
+# 6. Life expectancy analysis
+# 7. Make sure that scripts can be run individually
+# 8. Fix `transform` module
+# 9. Fix `extract` module
+# 10. Fix `audit` module
+# 11. Update database schema
+# 12. Switch to seasonally adjusted unemployment data
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
@@ -494,8 +497,6 @@ def run_model(dfs, params, output_path):
     α = 0.25
     train_date_end = '2020-02'
 
-
-
     for date_start in dates_start:
         dates = (date_start, train_date_end)
 
@@ -503,7 +504,7 @@ def run_model(dfs, params, output_path):
         for data_type in data_types:
             for group in groups:
                 path = os.path.join(output_path, analysis_date, 'model',
-                 'agg_forecast', data_type, group, date_start)
+                 'aggregate', data_type, group, date_start)
 
                 suicide = df_suicide_dist[data_type][group]
                 unemp = df_unemp_dist.total.total
@@ -521,7 +522,7 @@ def run_model(dfs, params, output_path):
         for data_type in data_types:
             for group in groups:
                 path = os.path.join(output_path, analysis_date, 'model',
-                 'group_forecast', data_type, group, date_start)
+                 'group', data_type, group, date_start)
 
                 suicide = df_suicide_dist[data_type][group]
                 unemp = df_unemp_dist[data_type][group]
@@ -540,7 +541,6 @@ def run_model(dfs, params, output_path):
 
                 save_output(suicide, preds, path, analysis_date,
                             date_start, data_type, group)
-
 
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ import yaml
 def create_directories(directory):
     os.makedirs(os.path.join(directory, 'data_visualization'))
 
-    forecast_types = ('agg_forecast', 'group_forecast')
+    forecast_types = ('aggregate', 'group')
     data_types = ('total', 'male', 'female')
     groups = ('0_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79',
               '80_99', 'total')
