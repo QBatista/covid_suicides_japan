@@ -8,6 +8,9 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
+# TODO(QBatista):
+# 1. Switch to "data_visualization"
+
 def unemp_suicide_plot(df_suicide, df_unemp, data_type='total'):
     color = df_suicide.index.year + (df_suicide.index.month - 1) / 12
 

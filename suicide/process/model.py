@@ -13,14 +13,76 @@ from plotly.subplots import make_subplots
 
 
 # TODO(QBatista):
-# 1. Add the age-gender analysis
-# 2. Fix warnings
-# 3. Unit testing
+# 1. Integrate figure 1 and 2 in this module
+# 2. Sanity check the results
+# 3. Modify file paths to work across different platforms
+# 4. Fix figure titles
+# 5. Unit testing
+# 6. Remove duplicate parameters
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
 COEF_MSG = 'Number of coefficients is different from the expected' + \
            ' number of coefficients'
+
+
+def plot_unemployment(forecasts, last_date):
+    covid_start = '2020-03'
+
+    # Create figure
+    fig = go.Figure()
+
+    # Plot actual unemployment
+    monthly_data = forecasts[covid_start:last_date]
+
+    fig.add_trace(go.Scatter(x=monthly_data.index,
+                             y=monthly_data.post_covid,
+                             name='Actual Unemployment',
+                             marker=dict(color='green', size=8)))
+
+    # Plot pre-covid projections
+    fig.add_trace(go.Scatter(x=monthly_data.index,
+                             y=monthly_data.pre_covid,
+                             name='Pre-Covid Projections',
+                             marker=dict(color='blue')))
+
+    # Add dashed line at last available date
+    fig.update_layout(yaxis_title='Unemployment Rate')
+
+    return fig
+
+
+def plot_forecasts(forecasts, last_date):
+    covid_start = '2020-03'
+
+    fig = go.Figure()
+
+    # Plot actual unemployment
+    monthly_data = forecasts[covid_start:].copy()
+
+    # Plot actual unemployment
+    fig.add_trace(go.Scatter(x=monthly_data.index,
+                             y=monthly_data.post_covid,
+                             name='Actual Unemployment',
+                             marker=dict(color='green', size=8)))
+
+    # Plot post-covid projections
+    fig.add_trace(go.Scatter(x=monthly_data[last_date:].index,
+                             y=monthly_data[last_date:].post_covid,
+                             mode='lines',
+                             name='Post-Covid Projections'))
+
+    fig.add_trace(go.Scatter(x=monthly_data.index,
+                             y=monthly_data.pre_covid,
+                             name='Pre-Covid Projections',
+                             marker=dict(color='blue')))
+
+    # Add dashed line at last available date
+    fig.add_vline(x=last_date, line_dash='dash')
+
+    fig.update_layout(yaxis_title='Unemployment Rate')
+
+    return fig
 
 
 def plot_preds_by_month(pre_preds, post_preds, suicide):
@@ -244,8 +306,16 @@ def gen_preds(suicide, unemp, forecasts, dates, α):
     return pre_preds, post_preds, pre_conf_int
 
 
-def gen_figs(suicide, preds, path, analysis_date, date_start, data_type,
-             group):
+def gen_figs(suicide, preds, forecasts, path, analysis_date, date_start,
+             data_type, group, last_date):
+
+    fig = plot_unemployment(forecasts, last_date)
+    full_path = path + '/present/unemp_vs_forecast.pdf'
+    fig.write_image(full_path, format='pdf')
+
+    fig = plot_forecasts(forecasts, last_date)
+    full_path = path + '/full/forecasts.pdf'
+    fig.write_image(full_path, format='pdf')
 
     date_end = suicide.index[-1]
     args = filter_dates(suicide, preds, date_start, date_end)
@@ -299,25 +369,6 @@ def save_output(suicide, preds, path, analysis_date, date_start, data_type,
 
     df_key_nb = pd.DataFrame(key_nb, index=key_nb_types)
     df_key_nb.round().to_csv(path + '/key_nb.csv', header=False)
-
-
-def initialize_dfs_store(data_types, key_nb_types, dates_start):
-    cols = pd.MultiIndex.from_tuples(tuple((data_type, key_nb_type)
-                                           for data_type in data_types
-                                           for key_nb_type in key_nb_types))
-    df_key_numbers = pd.DataFrame(columns=cols,
-                                  index=pd.to_datetime(dates_start))
-
-    cols = pd.MultiIndex.from_tuples(tuple((date_start, data_type))
-                                         for date_start in dates_start
-                                           for data_type in data_types
-                                           ).sort_values()
-
-
-    df_pre_preds = pd.DataFrame(columns=cols)
-    df_post_preds = pd.DataFrame(columns=cols)
-
-    return df_key_numbers, df_pre_preds, df_post_preds
 
 
 def construct_Xs(unemp, forecasts):
@@ -395,12 +446,12 @@ def run_model(dfs, params, output_path):
 
                 suicide = df_suicide_dist[data_type][group]
                 unemp = df_unemp_dist.total.total
+                last_date = unemp.index[-1]
                 forecasts = df_forecast_total
 
                 preds = gen_preds(suicide, unemp, forecasts, dates, α)
 
-                gen_figs(suicide, preds, path, analysis_date,
-                         date_start, data_type, group)
+                gen_figs(suicide, preds, forecasts, path, analysis_date, date_start, data_type, group, last_date)
 
                 save_output(suicide, preds, path, analysis_date,
                             date_start, data_type, group)
@@ -413,6 +464,7 @@ def run_model(dfs, params, output_path):
 
                 suicide = df_suicide_dist[data_type][group]
                 unemp = df_unemp_dist[data_type][group]
+                last_date = unemp.index[-1]
 
                 X = sm.tsa.add_trend(df_unemp_dist.total.total[:'2020-02'],
                                      trend='ct')
@@ -423,8 +475,7 @@ def run_model(dfs, params, output_path):
 
                 preds = gen_preds(suicide, unemp, forecasts, dates, α)
 
-                gen_figs(suicide, preds, path, analysis_date,
-                         date_start, data_type, group)
+                gen_figs(suicide, preds, forecasts, path, analysis_date, date_start, data_type, group, last_date)
 
                 save_output(suicide, preds, path, analysis_date,
                             date_start, data_type, group)
