@@ -10,10 +10,6 @@ from plotly.subplots import make_subplots
 from .model import plot_unemp_suicide
 
 
-# TODO(QBatista):
-# 1. Switch to "data_visualization"
-
-
 def visualize_data(dfs, params, output_path):
     # Unpack arguments
     (df_unemp_dist,
@@ -46,9 +42,9 @@ if __name__ == '__main__':
     import yaml
     from load_data import load_data
 
-    params_path = '../parameters.yml'
-    output_path = '../output/'
-    clean_data_path = '../clean_data/'
+    params_path = os.path.join(os.pardir, 'parameters.yml')
+    output_path = os.path.join(os.pardir, 'output')
+    clean_data_path = os.path.join(os.pardir, 'clean_data')
 
     # Load parameters
     with open(params_path) as file:

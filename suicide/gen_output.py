@@ -9,7 +9,7 @@ import yaml
 
 
 def create_directories(directory):
-    os.makedirs(directory + 'data_visualization/')
+    os.makedirs(os.path.join(directory, 'data_visualization'))
 
     forecast_types = ('agg_forecast', 'group_forecast')
     data_types = ('total', 'male', 'female')
@@ -21,8 +21,8 @@ def create_directories(directory):
                    '2012-01')
     fig_types = ('present', 'full')
 
-    dirs = [directory + 'model/' + forecast_type + '/' + data_type + '/' +
-            group + '/' + date_start + '/' + fig_type + '/'
+    dirs = [os.path.join(directory, 'model', forecast_type, data_type, group,
+                         date_start, fig_type)
             for forecast_type in forecast_types
             for data_type in data_types
             for group in groups
@@ -35,8 +35,8 @@ def create_directories(directory):
 
 if __name__ == '__main__':
     params_path = 'parameters.yml'
-    output_path = 'output/'
-    clean_data_path = 'clean_data/'
+    output_path = 'output'
+    clean_data_path = 'clean_data'
 
     # Load parameters
     with open(params_path) as file:
@@ -45,24 +45,19 @@ if __name__ == '__main__':
     analysis_date = params['analysis_date']
     print("Start generating figures for " + analysis_date + '.')
 
+    # Load data
     dfs = process.load_data(params, clean_data_path)
     print("Load data: done.")
 
     # Create directories if they don't exist
-    directory = output_path + analysis_date + '/'
+    directory = os.path.join(output_path, analysis_date)
     if not os.path.exists(directory):
         print("Create directory for " + analysis_date + ": done.")
         create_directories(directory)
 
     # Generate figures
-    process.fig_1(dfs, params, output_path)
-    print("Generate figure 1: done.")
-
-    process.fig_2(dfs, params, output_path)
-    print("Generate figure 2: done.")
-
-    process.fig_3_to_8(dfs, params, output_path)
-    print("Generate figures 3 to 8: done.")
+    process.visualize_data(dfs, params, output_path)
+    print("Generate data visualization figures: done.")
 
     process.run_model(dfs, params, output_path)
     print("Generate model figures: done.")

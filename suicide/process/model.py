@@ -4,6 +4,7 @@ A script to generate figures for the model's predictions.
 """
 
 
+import os
 import calendar
 import pandas as pd
 import numpy as np
@@ -13,17 +14,72 @@ from plotly.subplots import make_subplots
 
 
 # TODO(QBatista):
-# 1. Integrate figure 1 and 2 in this module
-# 2. Sanity check the results
-# 3. Modify file paths to work across different platforms
-# 4. Fix figure titles
-# 5. Unit testing
-# 6. Remove duplicate parameters
+# 1. Sanity check the results
+# 2. Fix figure titles
+# 3. Unit testing
+# 4. Remove duplicate parameters
+# 5. Clean up the code
+# 6. Switch agg_forecast -> aggregate, group_forecast -> group
+# 7. Move the plotting functions to a separate module
+# 8. Life expectancy analysis
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
 COEF_MSG = 'Number of coefficients is different from the expected' + \
            ' number of coefficients'
+
+
+def plot_unemp_suicide(suicide, unemp):
+    color = suicide.index.year + (suicide.index.month - 1) / 12
+
+    fig = make_subplots(rows=1, cols=2, specs=[[{"secondary_y": True}, {}]])
+
+    x_vals = unemp.index.intersection(suicide.index)
+    unemp_type_cap = unemp.name.capitalize()
+    suicide_type_cap = suicide.name.capitalize()
+
+    name = unemp_type_cap + ' Unemployment Rate (Left)'
+    fig.add_trace(go.Scatter(x=x_vals,
+                             y=unemp,
+                             name=name,
+                             marker=dict(color='blue')),
+                  row=1,
+                  col=1)
+
+    name = suicide_type_cap + ' Number of Suicides (Right)'
+    fig.add_trace(go.Scatter(x=x_vals,
+                             y=suicide,
+                             name=name,
+                             marker=dict(color='red')),
+                  secondary_y=True,
+                  row=1,
+                  col=1)
+
+    fig.add_trace(go.Scatter(x=unemp,
+                             y=suicide,
+                             mode='markers',
+                             marker=dict(color=color,
+                                         colorbar=dict(thickness=10)),
+                             showlegend=False),
+                  row=1,
+                  col=2)
+
+    # Update figure size
+    fig.update_layout(height=600, width=1200)
+
+    # Update xaxis properties
+    fig.update_xaxes(title_text=unemp_type_cap + " Unemployment Rate",
+                     row=1, col=2)
+
+    # Update yaxis properties
+    fig.update_yaxes(title_text=suicide_type_cap + " Number of Suicides",
+                     row=1, col=2)
+
+    # Update legend
+    legend = dict(yanchor="top", y=1.15, xanchor="left", x=0.01)
+    fig.update_layout(legend=legend)
+
+    return fig
 
 
 def plot_unemployment(forecasts, last_date):
@@ -306,50 +362,55 @@ def gen_preds(suicide, unemp, forecasts, dates, α):
     return pre_preds, post_preds, pre_conf_int
 
 
-def gen_figs(suicide, preds, forecasts, path, analysis_date, date_start,
+def gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start,
              data_type, group, last_date):
 
+    fig = plot_unemp_suicide(suicide, unemp)
+    full_path = os.path.join(path, 'present', 'unemp_suicide_ts_scatter.pdf')
+    fig.write_image(full_path, format='pdf')
+
     fig = plot_unemployment(forecasts, last_date)
-    full_path = path + '/present/unemp_vs_forecast.pdf'
+    full_path = os.path.join(path, 'present', 'unemp_vs_forecast.pdf')
+
     fig.write_image(full_path, format='pdf')
 
     fig = plot_forecasts(forecasts, last_date)
-    full_path = path + '/full/forecasts.pdf'
+    full_path = os.path.join(path, 'full', 'forecasts.pdf')
     fig.write_image(full_path, format='pdf')
 
     date_end = suicide.index[-1]
     args = filter_dates(suicide, preds, date_start, date_end)
     fig = plot_preds_by_month(*args[:-1])
-    full_path = path + '/present/unemp_by_month.pdf'
+    full_path = os.path.join(path, 'present', 'unemp_by_month.pdf')
     fig.write_image(full_path, format='pdf')
 
     plot_start = '2019-01'
     args = filter_dates(suicide, preds, plot_start, date_end)
     fig = plot_preds_ts(*args)
-    full_path = path + '/present/unemp_ts.pdf'
+    full_path = os.path.join(path, 'present', 'unemp_ts.pdf')
     fig.write_image(full_path, format='pdf')
 
     fig = plot_induced_suicides_ts(args[0], args[2])
-    full_path = path + '/present/induced_suicides_ts.pdf'
+    full_path = os.path.join(path, 'present', 'induced_suicides_ts.pdf')
     fig.write_image(full_path, format='pdf')
 
     fig = plot_explained_unemp_ts(args[0], args[1], data_type)
-    full_path = path + '/present/explained_unemp_ts.pdf'
+    full_path = os.path.join(path, 'present', 'explained_unemp_ts.pdf')
     fig.write_image(full_path, format='pdf')
 
     date_end += pd.Timedelta(366*3, unit='D')
     args = filter_dates(suicide, preds, date_start, date_end)
     fig = plot_preds_by_month(*args[:-1])
-    full_path = path + '/full/unemp_by_month.pdf'
+    full_path = os.path.join(path, 'full', 'unemp_by_month.pdf')
     fig.write_image(full_path, format='pdf')
 
     args = filter_dates(suicide, preds, plot_start, date_end)
     fig = plot_preds_ts(*args)
-    full_path = path + '/full/unemp_ts.pdf'
+    full_path = os.path.join(path, 'full', 'unemp_ts.pdf')
     fig.write_image(full_path, format='pdf')
 
     fig = plot_explained_unemp_ts(args[0], args[1], data_type)
-    full_path = path + '/full/explained_unemp_ts.pdf'
+    full_path = os.path.join(path, 'full', 'explained_unemp_ts.pdf')
     fig.write_image(full_path, format='pdf')
 
 
@@ -359,8 +420,8 @@ def save_output(suicide, preds, path, analysis_date, date_start, data_type,
     # Unpack arguments
     pre_preds, post_preds, pre_conf_int = preds
 
-    pre_preds.to_csv(path + '/pre_preds.csv')
-    post_preds.to_csv(path + '/post_preds.csv')
+    pre_preds.to_csv(os.path.join(path, 'pre_preds.csv'))
+    post_preds.to_csv(os.path.join(path, 'post_preds.csv'))
 
     key_nb = compute_key_numbers(pre_preds, post_preds, suicide)
 
@@ -368,7 +429,7 @@ def save_output(suicide, preds, path, analysis_date, date_start, data_type,
                     'post_minus_pre_present')
 
     df_key_nb = pd.DataFrame(key_nb, index=key_nb_types)
-    df_key_nb.round().to_csv(path + '/key_nb.csv', header=False)
+    df_key_nb.round().to_csv(os.path.join(path, 'key_nb.csv'), header=False)
 
 
 def construct_Xs(unemp, forecasts):
@@ -441,8 +502,8 @@ def run_model(dfs, params, output_path):
         # Aggregate forecasts
         for data_type in data_types:
             for group in groups:
-                path = output_path + analysis_date + '/model/agg_forecast/' \
-                 + data_type + '/' + group + '/' + date_start + '/'
+                path = os.path.join(output_path, analysis_date, 'model',
+                 'agg_forecast', data_type, group, date_start)
 
                 suicide = df_suicide_dist[data_type][group]
                 unemp = df_unemp_dist.total.total
@@ -451,7 +512,7 @@ def run_model(dfs, params, output_path):
 
                 preds = gen_preds(suicide, unemp, forecasts, dates, α)
 
-                gen_figs(suicide, preds, forecasts, path, analysis_date, date_start, data_type, group, last_date)
+                gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start, data_type, group, last_date)
 
                 save_output(suicide, preds, path, analysis_date,
                             date_start, data_type, group)
@@ -459,8 +520,8 @@ def run_model(dfs, params, output_path):
         # Age-gender-specific forecasts
         for data_type in data_types:
             for group in groups:
-                path = output_path + analysis_date + '/model/group_forecast/' \
-                 + data_type + '/' + group + '/' + date_start + '/'
+                path = os.path.join(output_path, analysis_date, 'model',
+                 'group_forecast', data_type, group, date_start)
 
                 suicide = df_suicide_dist[data_type][group]
                 unemp = df_unemp_dist[data_type][group]
@@ -475,7 +536,7 @@ def run_model(dfs, params, output_path):
 
                 preds = gen_preds(suicide, unemp, forecasts, dates, α)
 
-                gen_figs(suicide, preds, forecasts, path, analysis_date, date_start, data_type, group, last_date)
+                gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start, data_type, group, last_date)
 
                 save_output(suicide, preds, path, analysis_date,
                             date_start, data_type, group)
@@ -486,9 +547,9 @@ if __name__ == '__main__':
     import yaml
     from load_data import load_data
 
-    params_path = '../parameters.yml'
-    output_path = '../output/'
-    clean_data_path = '../clean_data/'
+    params_path = os.path.join(os.pardir, 'parameters.yml')
+    output_path = os.path.join(os.pardir, 'output')
+    clean_data_path = os.path.join(os.pardir, 'clean_data')
 
     # Load parameters
     with open(params_path) as file:

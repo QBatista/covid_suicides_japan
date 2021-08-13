@@ -1,5 +1,9 @@
+numpy
 pandas
+statsmodels
 tabula
 bs4
 urllib
 petl
+yaml
+plotly

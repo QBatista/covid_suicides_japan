@@ -3,6 +3,7 @@ A script to load the data for processing.
 
 """
 
+import os
 import pandas as pd
 import numpy as np
 
@@ -13,13 +14,13 @@ def load_unemp_data(params, clean_data_path):
     factor = params['factor']
 
     # Load distribution data
-    dist_path = clean_data_path + analysis_date + '/unemp_dist.csv'
+    dist_path = os.path.join(clean_data_path, analysis_date, 'unemp_dist.csv')
     df_unemp_dist = pd.read_csv(dist_path, index_col=0, header=[0, 1])
     idx = pd.to_datetime(df_unemp_dist.index).to_period('M').to_timestamp()
     df_unemp_dist.index = idx
 
     # Load annual unemployment data
-    annual_path = clean_data_path + analysis_date + '/unemp_annual.csv'
+    annual_path = os.path.join(clean_data_path, analysis_date, 'unemp_annual.csv')
     df_unemp_annual = pd.read_csv(annual_path, index_col=0)
     df_unemp_annual.index = pd.to_datetime(df_unemp_annual.index)
 
@@ -32,12 +33,12 @@ def load_suicide_data(params, clean_data_path):
     factor = params['factor']
 
     # Load distribution suicide data
-    dist_path = clean_data_path + analysis_date + '/suicide_dist.csv'
+    dist_path = os.path.join(clean_data_path, analysis_date, 'suicide_dist.csv')
     df_suicide_dist = pd.read_csv(dist_path, index_col=0, header=[0, 1])
     df_suicide_dist.index = pd.to_datetime(df_suicide_dist.index)
 
     # Load annual suicide data
-    annual_path = clean_data_path + analysis_date + '/suicide_annual.csv'
+    annual_path = os.path.join(clean_data_path, analysis_date, 'suicide_annual.csv')
     df_suicide_annual = pd.read_csv(annual_path, index_col=0)
     df_suicide_annual.index = pd.to_datetime(df_suicide_annual.index)
 
@@ -50,7 +51,7 @@ def load_forecast_data(df_unemp_dist, params, clean_data_path):
     factor = params['factor']
 
     # Load forecast data
-    forecast_path = clean_data_path + analysis_date + '/forecast.csv'
+    forecast_path = os.path.join(clean_data_path, analysis_date, 'forecast.csv')
     df_forecast_quarterly = pd.read_csv(forecast_path, index_col=0)
     idx = pd.to_datetime(df_forecast_quarterly.index)
     idx = idx.to_period('Q').to_timestamp()
