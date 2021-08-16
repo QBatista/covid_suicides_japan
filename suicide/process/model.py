@@ -24,7 +24,7 @@ from plotly.subplots import make_subplots
 # 9. Fix `extract` module
 # 10. Fix `audit` module
 # 11. Update database schema
-# 12. Switch to seasonally adjusted unemployment data
+# 12. Switch to seasonally adjusted unemployment
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
@@ -38,21 +38,17 @@ def plot_unemp_suicide(suicide, unemp):
     fig = make_subplots(rows=1, cols=2, specs=[[{"secondary_y": True}, {}]])
 
     x_vals = unemp.index.intersection(suicide.index)
-    unemp_type_cap = unemp.name.capitalize()
-    suicide_type_cap = suicide.name.capitalize()
 
-    name = unemp_type_cap + ' Unemployment Rate (Left)'
     fig.add_trace(go.Scatter(x=x_vals,
                              y=unemp,
-                             name=name,
+                             name=unemp.name + ' Unemployment Rate (Left)',
                              marker=dict(color='blue')),
                   row=1,
                   col=1)
 
-    name = suicide_type_cap + ' Number of Suicides (Right)'
     fig.add_trace(go.Scatter(x=x_vals,
                              y=suicide,
-                             name=name,
+                             name=suicide.name + ' Number of Suicides (Right)',
                              marker=dict(color='red')),
                   secondary_y=True,
                   row=1,
@@ -71,11 +67,11 @@ def plot_unemp_suicide(suicide, unemp):
     fig.update_layout(height=600, width=1200)
 
     # Update xaxis properties
-    fig.update_xaxes(title_text=unemp_type_cap + " Unemployment Rate",
+    fig.update_xaxes(title_text=unemp.name + " Unemployment Rate",
                      row=1, col=2)
 
     # Update yaxis properties
-    fig.update_yaxes(title_text=suicide_type_cap + " Number of Suicides",
+    fig.update_yaxes(title_text=suicide.name + " Number of Suicides",
                      row=1, col=2)
 
     # Update legend
@@ -195,8 +191,8 @@ def plot_preds_by_month(pre_preds, post_preds, suicide):
         fig['layout']['xaxis{}'.format(i)]['title'] = 'Year'
 
     # Update size and title
-    temp = ' observed versus expected number of suicides by month over time'
-    title = suicide.name.capitalize() + temp
+    temp = ' Observed Versus Expected Number of Suicides by Month Over Time'
+    title = suicide.name + temp
     fig.update_layout(height=1200, width=900, title=title)
 
     return fig
@@ -247,8 +243,8 @@ def plot_preds_ts(pre_preds, post_preds, suicide, pre_conf_int):
                   name='Pandemic start')
 
     # Update title
-    temp = ' observed versus expected number of suicides'
-    title = suicide.name.capitalize() + temp
+    temp = ' Observed Versus Expected Number of Suicides'
+    title = suicide.name + temp
     fig.update_layout(title=title)
 
     return fig
@@ -267,14 +263,14 @@ def plot_induced_suicides_ts(pre_preds, suicide):
                          y=data,
                          showlegend=False))
 
-    temp = ' covid-induced suicides over time'
-    title = suicide.name.capitalize() + temp
+    temp = ' Covid-induced Suicides Over Time'
+    title = suicide.name + temp
     fig.update_layout(title=title)
 
     return fig
 
 
-def plot_explained_unemp_ts(pre_preds, post_preds, data_type):
+def plot_explained_unemp_ts(pre_preds, post_preds, name):
     covid_start = '2020-03'
 
     data = post_preds[covid_start:] - pre_preds[covid_start:]
@@ -286,8 +282,8 @@ def plot_explained_unemp_ts(pre_preds, post_preds, data_type):
                          y=data,
                          showlegend=False))
 
-    temp = ' number of suicides explained by unemployment over time'
-    title = data_type.capitalize() + temp
+    temp = ' Number of Suicides Explained by Unemployment Over Time'
+    title = name + temp
     fig.update_layout(title=title)
 
     return fig
@@ -397,7 +393,7 @@ def gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start,
     full_path = os.path.join(path, 'present', 'induced_suicides_ts.pdf')
     fig.write_image(full_path, format='pdf')
 
-    fig = plot_explained_unemp_ts(args[0], args[1], data_type)
+    fig = plot_explained_unemp_ts(args[0], args[1], suicide.name)
     full_path = os.path.join(path, 'present', 'explained_unemp_ts.pdf')
     fig.write_image(full_path, format='pdf')
 
@@ -511,6 +507,13 @@ def run_model(dfs, params, output_path):
                 last_date = unemp.index[-1]
                 forecasts = df_forecast_total
 
+                name = data_type.capitalize()
+                if group != 'total':
+                    name += ' (Age: ' + group.replace('_', '-') + ')'
+
+                suicide.rename(name, inplace=True)
+                unemp.rename(name, inplace=True)
+
                 preds = gen_preds(suicide, unemp, forecasts, dates, α)
 
                 gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start, data_type, group, last_date)
@@ -527,6 +530,13 @@ def run_model(dfs, params, output_path):
                 suicide = df_suicide_dist[data_type][group]
                 unemp = df_unemp_dist[data_type][group]
                 last_date = unemp.index[-1]
+
+                name = data_type.capitalize()
+                if group != 'total':
+                    name += ' (Age: ' + group.replace('_', '-') + ')'
+
+                suicide.rename(name, inplace=True)
+                unemp.rename(name, inplace=True)
 
                 X = sm.tsa.add_trend(df_unemp_dist.total.total[:'2020-02'],
                                      trend='ct')
