@@ -22,7 +22,6 @@ from plotly.subplots import make_subplots
 # 7. Fix `extract` module
 # 8. Fix `audit` module
 # 9. Update database schema
-# 10. Switch to seasonally adjusted unemployment
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
@@ -401,7 +400,7 @@ def gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start,
     full_path = os.path.join(path, 'full', 'unemp_ts.pdf')
     fig.write_image(full_path, format='pdf')
 
-    fig = plot_explained_unemp_ts(args[0], args[1], data_type)
+    fig = plot_explained_unemp_ts(args[0], args[1], suicide.name)
     full_path = os.path.join(path, 'full', 'explained_unemp_ts.pdf')
     fig.write_image(full_path, format='pdf')
 
