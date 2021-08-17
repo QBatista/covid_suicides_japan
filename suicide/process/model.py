@@ -13,23 +13,22 @@ from plotly.subplots import make_subplots
 
 
 # TODO(QBatista):
-# 1. Fix figure titles
-# 2. Unit testing
-# 3. Remove duplicate parameters
-# 4. Clean up the code
-# 5. Move the plotting functions to a separate module
-# 6. Life expectancy analysis
-# 7. Make sure that scripts can be run individually
-# 8. Fix `transform` module
-# 9. Fix `extract` module
-# 10. Fix `audit` module
-# 11. Update database schema
-# 12. Switch to seasonally adjusted unemployment
+# 1. Unit testing
+# 2. Clean up the code
+# 3. Move the plotting functions to a separate module
+# 4. Life expectancy analysis
+# 5. Make sure that scripts can be run individually
+# 6. Fix `transform` module
+# 7. Fix `extract` module
+# 8. Fix `audit` module
+# 9. Update database schema
+# 10. Switch to seasonally adjusted unemployment
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
 COEF_MSG = 'Number of coefficients is different from the expected' + \
            ' number of coefficients'
+COVID_START = '2020-03'
 
 
 def plot_unemp_suicide(suicide, unemp):
@@ -82,13 +81,11 @@ def plot_unemp_suicide(suicide, unemp):
 
 
 def plot_unemployment(forecasts, last_date):
-    covid_start = '2020-03'
-
     # Create figure
     fig = go.Figure()
 
     # Plot actual unemployment
-    monthly_data = forecasts[covid_start:last_date]
+    monthly_data = forecasts[COVID_START:last_date]
 
     fig.add_trace(go.Scatter(x=monthly_data.index,
                              y=monthly_data.post_covid,
@@ -108,12 +105,11 @@ def plot_unemployment(forecasts, last_date):
 
 
 def plot_forecasts(forecasts, last_date):
-    covid_start = '2020-03'
 
     fig = go.Figure()
 
     # Plot actual unemployment
-    monthly_data = forecasts[covid_start:].copy()
+    monthly_data = forecasts[COVID_START:].copy()
 
     # Plot actual unemployment
     fig.add_trace(go.Scatter(x=monthly_data.index,
@@ -235,8 +231,8 @@ def plot_preds_ts(pre_preds, post_preds, suicide, pre_conf_int):
                              marker=dict(color='green')))
 
     # Add line for start of the covid-19 pandemic
-    pandemic_start = '2020-02-15'
-    fig.add_vline(x=pandemic_start,
+    line = '2020-02-15'
+    fig.add_vline(x=line,
                   line_width=2,
                   line_dash="dash",
                   line_color="black",
@@ -251,10 +247,9 @@ def plot_preds_ts(pre_preds, post_preds, suicide, pre_conf_int):
 
 
 def plot_induced_suicides_ts(pre_preds, suicide):
-    covid_start = '2020-03'
     date_end = suicide.index[-1]
 
-    data = suicide[covid_start:] - pre_preds[covid_start:date_end]
+    data = suicide[COVID_START:] - pre_preds[COVID_START:date_end]
 
     fig = go.Figure()
 
@@ -271,9 +266,8 @@ def plot_induced_suicides_ts(pre_preds, suicide):
 
 
 def plot_explained_unemp_ts(pre_preds, post_preds, name):
-    covid_start = '2020-03'
 
-    data = post_preds[covid_start:] - pre_preds[covid_start:]
+    data = post_preds[COVID_START:] - pre_preds[COVID_START:]
 
     fig = go.Figure()
 
@@ -290,14 +284,13 @@ def plot_explained_unemp_ts(pre_preds, post_preds, name):
 
 
 def compute_key_numbers(pre_preds, post_preds, suicide):
-    covid_start = '2020-03'
     present_date = suicide.index[-1]
     date_end = present_date + pd.Timedelta(366*3, unit='D')
 
     # Filter data
-    pre_data = pre_preds[covid_start:date_end]
-    post_data = post_preds[covid_start:date_end]
-    suicide_data = suicide[covid_start:date_end]
+    pre_data = pre_preds[COVID_START:date_end]
+    post_data = post_preds[COVID_START:date_end]
+    suicide_data = suicide[COVID_START:date_end]
 
     # Compute differences
     diff_actual = np.nansum(suicide_data - pre_data)
@@ -538,9 +531,9 @@ def run_model(dfs, params, output_path):
                 suicide.rename(name, inplace=True)
                 unemp.rename(name, inplace=True)
 
-                X = sm.tsa.add_trend(df_unemp_dist.total.total[:'2020-02'],
+                X = sm.tsa.add_trend(df_unemp_dist.total.total[:train_date_end],
                                      trend='ct')
-                y = unemp[:'2020-02']
+                y = unemp[:train_date_end]
                 model = sm.regression.linear_model.OLS(y, X)
                 res = model.fit()
                 forecasts = df_forecast_total.apply(lambda x: res.predict(sm.tsa.add_trend(x, trend='ct')))
