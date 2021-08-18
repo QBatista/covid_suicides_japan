@@ -7,7 +7,7 @@ import os
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from .model import plot_unemp_suicide
+from plot import plot_unemp_suicide
 
 
 def visualize_data(dfs, params, output_path):

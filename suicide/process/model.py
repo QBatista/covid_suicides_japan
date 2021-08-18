@@ -25,6 +25,15 @@ NOBS_MSG = 'Number of observations is different than expected number' + \
 COEF_MSG = 'Number of coefficients is different from the expected' + \
            ' number of coefficients'
 COVID_START = '2020-03'
+LAST_TRAIN_DATE = '2020-02'
+ALPHA = 0.25
+DATES_START = ('2009-01',
+               '2010-01',
+               '2011-01',
+               '2012-01')
+DATA_TYPES = ('total', 'male', 'female')
+GROUPS = ('0_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79',
+          '80_99', 'total')
 
 
 def compute_key_numbers(pre_preds, post_preds, suicide):
@@ -73,7 +82,7 @@ def check_reg_res(res, date_start):
         raise ValueError(COEF_MSG)
 
 
-def gen_preds(suicide, unemp, forecasts, dates, α):
+def gen_preds(suicide, unemp, forecasts, dates):
     # Unpack arguments
     date_start, date_end = dates
 
@@ -93,7 +102,7 @@ def gen_preds(suicide, unemp, forecasts, dates, α):
     pre_preds = res.predict(X_pre_covid).rename('pred')
     post_preds = res.predict(X_post_covid).rename('pred')
 
-    pre_conf_int = res.get_prediction(X_pre_covid).conf_int(alpha=α)
+    pre_conf_int = res.get_prediction(X_pre_covid).conf_int(alpha=ALPHA)
 
     return pre_preds, post_preds, pre_conf_int
 
@@ -152,7 +161,6 @@ def gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start,
 
 def save_output(suicide, preds, path, analysis_date, date_start, data_type,
                 group):
-
     # Unpack arguments
     pre_preds, post_preds, pre_conf_int = preds
 
@@ -170,15 +178,14 @@ def save_output(suicide, preds, path, analysis_date, date_start, data_type,
 
 def construct_Xs(unemp, forecasts):
     # Construct data for regression
-    same_data_end_date = pd.to_datetime('2020-02')
-    diff_data_start = same_data_end_date + pd.Timedelta(1, unit='MS')
+    diff_data_start = pd.to_datetime(LAST_TRAIN_DATE) + pd.Timedelta(1, unit='MS')
 
     # Use same data for pre and post covid paths (actual unemployment)
-    # until same_data_end_date
+    # until LAST_TRAIN_DATE
     temp_df = pd.DataFrame(columns=['post_covid', 'pre_covid'],
-                           index=unemp[:same_data_end_date].index)
-    temp_df.post_covid = unemp[:same_data_end_date].values
-    temp_df.pre_covid = unemp[:same_data_end_date].values
+                           index=unemp[:LAST_TRAIN_DATE].index)
+    temp_df.post_covid = unemp[:LAST_TRAIN_DATE].values
+    temp_df.pre_covid = unemp[:LAST_TRAIN_DATE].values
 
     # Combine with "pre-covid" and "post-covid"' paths data
     df_unemp_wforecast = pd.concat([temp_df, forecasts[diff_data_start:]])
@@ -216,26 +223,13 @@ def run_model(dfs, params, output_path):
      df_forecast_quarterly) = dfs
 
     analysis_date = params['analysis_date']
-    factor = params['factor']
 
-    # Parameters
-    dates_start = ('2009-01',
-                   '2010-01',
-                   '2011-01',
-                   '2012-01')
-    data_types = ('total', 'male', 'female')
-    groups = ('0_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79',
-              '80_99', 'total')
-
-    α = 0.25
-    train_date_end = '2020-02'
-
-    for date_start in dates_start:
-        dates = (date_start, train_date_end)
+    for date_start in DATES_START:
+        dates = (date_start, LAST_TRAIN_DATE)
 
         # Aggregate forecasts
-        for data_type in data_types:
-            for group in groups:
+        for data_type in DATA_TYPES:
+            for group in GROUPS:
                 path = os.path.join(output_path, analysis_date, 'model',
                  'aggregate', data_type, group, date_start)
 
@@ -251,7 +245,7 @@ def run_model(dfs, params, output_path):
                 suicide.rename(name, inplace=True)
                 unemp.rename(name, inplace=True)
 
-                preds = gen_preds(suicide, unemp, forecasts, dates, α)
+                preds = gen_preds(suicide, unemp, forecasts, dates)
 
                 gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start, data_type, group, last_date)
 
@@ -259,8 +253,8 @@ def run_model(dfs, params, output_path):
                             date_start, data_type, group)
 
         # Age-gender-specific forecasts
-        for data_type in data_types:
-            for group in groups:
+        for data_type in DATA_TYPES:
+            for group in GROUPS:
                 path = os.path.join(output_path, analysis_date, 'model',
                  'group', data_type, group, date_start)
 
@@ -275,14 +269,14 @@ def run_model(dfs, params, output_path):
                 suicide.rename(name, inplace=True)
                 unemp.rename(name, inplace=True)
 
-                X = sm.tsa.add_trend(df_unemp_dist.total.total[:train_date_end],
+                X = sm.tsa.add_trend(df_unemp_dist.total.total[:LAST_TRAIN_DATE],
                                      trend='ct')
-                y = unemp[:train_date_end]
+                y = unemp[:LAST_TRAIN_DATE]
                 model = sm.regression.linear_model.OLS(y, X)
                 res = model.fit()
                 forecasts = df_forecast_total.apply(lambda x: res.predict(sm.tsa.add_trend(x, trend='ct')))
 
-                preds = gen_preds(suicide, unemp, forecasts, dates, α)
+                preds = gen_preds(suicide, unemp, forecasts, dates)
 
                 gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start, data_type, group, last_date)
 
