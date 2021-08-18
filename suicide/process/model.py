@@ -25,8 +25,8 @@ NOBS_MSG = 'Number of observations is different than expected number' + \
 COEF_MSG = 'Number of coefficients is different from the expected' + \
            ' number of coefficients'
 COVID_START = '2020-03'
-LAST_TRAIN_DATE = '2020-02'
-ALPHA = 0.25
+LAST_TRAIN_DATE = '2020-02'  # Last date for fitting the model
+ALPHA = 0.25  # Prediction confidence interval parameter
 DATES_START = ('2009-01',
                '2010-01',
                '2011-01',
@@ -82,16 +82,13 @@ def check_reg_res(res, date_start):
         raise ValueError(COEF_MSG)
 
 
-def gen_preds(suicide, unemp, forecasts, dates):
-    # Unpack arguments
-    date_start, date_end = dates
-
+def gen_preds(suicide, unemp, forecasts, date_start):
     # Construct training data
     X_pre_covid, X_post_covid = construct_Xs(unemp, forecasts)
 
     # Filter data
-    y_train = suicide[date_start:date_end]
-    X_train = X_pre_covid[date_start:date_end]
+    y_train = suicide[date_start:LAST_TRAIN_DATE]
+    X_train = X_pre_covid[date_start:LAST_TRAIN_DATE]
 
     # Run regression
     model = sm.regression.linear_model.OLS(y_train, X_train)
@@ -213,6 +210,27 @@ def construct_Xs(unemp, forecasts):
     return Xs
 
 
+def rename_series(suicide, unemp, data_type, group):
+    name = data_type.capitalize()
+    if group != 'total':
+        name += ' (Age: ' + group.replace('_', '-') + ')'
+
+    suicide.rename(name, inplace=True)
+    unemp.rename(name, inplace=True)
+
+
+def gen_group_forecasts(unemp, df_unemp_dist, df_forecast_total):
+    X = sm.tsa.add_trend(df_unemp_dist.total.total[:LAST_TRAIN_DATE],
+                         trend='ct')
+    y = unemp[:LAST_TRAIN_DATE]
+    model = sm.regression.linear_model.OLS(y, X)
+    res = model.fit()
+    def predict(x): return res.predict(sm.tsa.add_trend(x, trend='ct'))
+    forecasts = df_forecast_total.apply(predict)
+
+    return forecasts
+
+
 def run_model(dfs, params, output_path):
     # Unpack arguments
     (df_unemp_dist,
@@ -225,8 +243,6 @@ def run_model(dfs, params, output_path):
     analysis_date = params['analysis_date']
 
     for date_start in DATES_START:
-        dates = (date_start, LAST_TRAIN_DATE)
-
         # Aggregate forecasts
         for data_type in DATA_TYPES:
             for group in GROUPS:
@@ -238,16 +254,12 @@ def run_model(dfs, params, output_path):
                 last_date = unemp.index[-1]
                 forecasts = df_forecast_total
 
-                name = data_type.capitalize()
-                if group != 'total':
-                    name += ' (Age: ' + group.replace('_', '-') + ')'
+                rename_series(suicide, unemp, data_type, group)
 
-                suicide.rename(name, inplace=True)
-                unemp.rename(name, inplace=True)
+                preds = gen_preds(suicide, unemp, forecasts, date_start)
 
-                preds = gen_preds(suicide, unemp, forecasts, dates)
-
-                gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start, data_type, group, last_date)
+                gen_figs(suicide, preds, forecasts, unemp, path, analysis_date,
+                         date_start, data_type, group, last_date)
 
                 save_output(suicide, preds, path, analysis_date,
                             date_start, data_type, group)
@@ -262,23 +274,15 @@ def run_model(dfs, params, output_path):
                 unemp = df_unemp_dist[data_type][group]
                 last_date = unemp.index[-1]
 
-                name = data_type.capitalize()
-                if group != 'total':
-                    name += ' (Age: ' + group.replace('_', '-') + ')'
+                rename_series(suicide, unemp, data_type, group)
 
-                suicide.rename(name, inplace=True)
-                unemp.rename(name, inplace=True)
+                forecasts = gen_group_forecasts(unemp, df_unemp_dist,
+                                                df_forecast_total)
 
-                X = sm.tsa.add_trend(df_unemp_dist.total.total[:LAST_TRAIN_DATE],
-                                     trend='ct')
-                y = unemp[:LAST_TRAIN_DATE]
-                model = sm.regression.linear_model.OLS(y, X)
-                res = model.fit()
-                forecasts = df_forecast_total.apply(lambda x: res.predict(sm.tsa.add_trend(x, trend='ct')))
+                preds = gen_preds(suicide, unemp, forecasts, date_start)
 
-                preds = gen_preds(suicide, unemp, forecasts, dates)
-
-                gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start, data_type, group, last_date)
+                gen_figs(suicide, preds, forecasts, unemp, path, analysis_date,
+                         date_start, data_type, group, last_date)
 
                 save_output(suicide, preds, path, analysis_date,
                             date_start, data_type, group)
