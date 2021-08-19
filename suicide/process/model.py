@@ -12,12 +12,19 @@ from plot_utils import *
 
 # TODO(QBatista):
 # 1. Life expectancy analysis
-# 2. Make sure that scripts can be run individually
-# 3. Unit testing: `compute_key_numbers`, `filter_dates`, `check_reg_res`
-# 4. Fix `transform` module
-# 5. Fix `extract` module
-# 6. Fix `audit` module
+# 2. Store regression R^2 and residuals
+# 3. Outlier analysis (suicide-unemployment)
+# 4. Use adjusted suicide data
+# 5. Use adjusted unemployment data
+# 6. Aggregation analysis
 # 7. Update database schema
+# 8. Get updated clean data and update `load_data`
+# 9. Modify `transform` to transform raw data into new clean data
+# 10. Modify `extract` to automatically get new raw data
+#
+# - Unit testing
+# - Documentation
+
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
@@ -37,6 +44,16 @@ REG_NB_COEFS = 1 + 1 + 11 + 11 + 1
 
 
 def compute_key_numbers(pre_preds, post_preds, suicide):
+    """
+    Compute the three key numbers for our analysis:
+        1. the difference between observed and predicted suicides
+        2. the number of additional covid-induced suicides we anticipate due
+           to changes in unemployment
+        3. the number of covid-induced suicides that can be explained due to
+           changes in unemployment up to now.
+
+    """
+
     present_date = suicide.index[-1]
     date_end = present_date + pd.Timedelta(366*3, unit='D')
 
@@ -55,20 +72,32 @@ def compute_key_numbers(pre_preds, post_preds, suicide):
 
 
 def filter_dates(suicide, preds, date_start, date_end):
+    """
+    Helper function to select `suicide` and `preds` data between
+    `date_start` and `date_end`.
+
+    """
+
      # Unpack arguments
      pre_preds, post_preds, pre_conf_int = preds
 
      # Prepare args
      mask = pre_preds.index.isin(pre_preds[date_start:date_end].index)
-     args = (pre_preds[date_start:date_end],
-             post_preds[date_start:date_end],
-             suicide.loc[date_start:date_end],
-             pre_conf_int[mask, :])
+     out = (pre_preds[date_start:date_end],
+            post_preds[date_start:date_end],
+            suicide.loc[date_start:date_end],
+            pre_conf_int[mask, :])
 
-     return args
+     return out
 
 
 def check_reg_res(res, date_start):
+    """
+    Helper function for checking properties of the regression result object
+    `res`.
+
+    """
+
     # Test that the number of observations matches the expected
     # number of observations
     ds = pd.to_datetime(date_start)
