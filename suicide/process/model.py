@@ -12,15 +12,14 @@ from plot_utils import *
 
 # TODO(QBatista):
 # 1. Life expectancy analysis
-# 2. Store regression R^2 and residuals
-# 3. Outlier analysis (suicide-unemployment)
-# 4. Use adjusted suicide data
-# 5. Use adjusted unemployment data
-# 6. Aggregation analysis
-# 7. Update database schema
-# 8. Get updated clean data and update `load_data`
-# 9. Modify `transform` to transform raw data into new clean data
-# 10. Modify `extract` to automatically get new raw data
+# 2. Outlier analysis (suicide-unemployment)
+# 3. Use adjusted suicide data
+# 4. Use adjusted unemployment data
+# 5. Aggregation analysis
+# 6. Update database schema
+# 7. Get updated clean data and update `load_data`
+# 8. Modify `transform` to transform raw data into new clean data
+# 9. Modify `extract` to automatically get new raw data
 #
 # - Unit testing
 # - Documentation
@@ -78,17 +77,17 @@ def filter_dates(suicide, preds, date_start, date_end):
 
     """
 
-     # Unpack arguments
-     pre_preds, post_preds, pre_conf_int = preds
+    # Unpack arguments
+    pre_preds, post_preds, pre_conf_int = preds
 
-     # Prepare args
-     mask = pre_preds.index.isin(pre_preds[date_start:date_end].index)
-     out = (pre_preds[date_start:date_end],
-            post_preds[date_start:date_end],
-            suicide.loc[date_start:date_end],
-            pre_conf_int[mask, :])
+    # Prepare args
+    mask = pre_preds.index.isin(pre_preds[date_start:date_end].index)
+    out = (pre_preds[date_start:date_end],
+           post_preds[date_start:date_end],
+           suicide.loc[date_start:date_end],
+           pre_conf_int[mask, :])
 
-     return out
+    return out
 
 
 def check_reg_res(res, date_start):
@@ -131,7 +130,7 @@ def gen_preds(suicide, unemp, forecasts, date_start):
 
     pre_conf_int = res.get_prediction(X_pre_covid).conf_int(alpha=ALPHA)
 
-    return pre_preds, post_preds, pre_conf_int
+    return (pre_preds, post_preds, pre_conf_int), res
 
 
 def gen_figs(suicide, preds, forecasts, unemp, path, analysis_date, date_start,
@@ -286,13 +285,14 @@ def run_model(dfs, params, output_path):
 
                 rename_series(suicide, unemp, data_type, group)
 
-                preds = gen_preds(suicide, unemp, forecasts, date_start)
+                preds, res = gen_preds(suicide, unemp, forecasts, date_start)
 
                 gen_figs(suicide, preds, forecasts, unemp, path, analysis_date,
                          date_start, data_type, group, last_date)
 
                 save_output(suicide, preds, path, analysis_date,
                             date_start, data_type, group)
+                res.save(os.path.join(path, 'regression_result.pickle'))
 
         # Age-gender-specific forecasts
         for data_type in DATA_TYPES:
@@ -309,13 +309,15 @@ def run_model(dfs, params, output_path):
                 forecasts = gen_group_forecasts(unemp, df_unemp_dist,
                                                 df_forecast_total)
 
-                preds = gen_preds(suicide, unemp, forecasts, date_start)
+                preds, res = gen_preds(suicide, unemp, forecasts, date_start)
 
                 gen_figs(suicide, preds, forecasts, unemp, path, analysis_date,
                          date_start, data_type, group, last_date)
 
                 save_output(suicide, preds, path, analysis_date,
                             date_start, data_type, group)
+                res.save(os.path.join(path, 'regression_result.pickle'))
+
 
 
 if __name__ == '__main__':
