@@ -7,18 +7,17 @@ import os
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-from plot import *
+from plot_utils import *
 
 
 # TODO(QBatista):
-# 1. Unit testing
-# 2. Clean up the code
-# 3. Life expectancy analysis
-# 4. Make sure that scripts can be run individually
-# 5. Fix `transform` module
-# 6. Fix `extract` module
-# 7. Fix `audit` module
-# 8. Update database schema
+# 1. Life expectancy analysis
+# 2. Make sure that scripts can be run individually
+# 3. Unit testing: `compute_key_numbers`, `filter_dates`, `check_reg_res`
+# 4. Fix `transform` module
+# 5. Fix `extract` module
+# 6. Fix `audit` module
+# 7. Update database schema
 
 NOBS_MSG = 'Number of observations is different than expected number' + \
            ' of observations.'
@@ -34,6 +33,7 @@ DATES_START = ('2009-01',
 DATA_TYPES = ('total', 'male', 'female')
 GROUPS = ('0_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79',
           '80_99', 'total')
+REG_NB_COEFS = 1 + 1 + 11 + 11 + 1
 
 
 def compute_key_numbers(pre_preds, post_preds, suicide):
@@ -71,14 +71,15 @@ def filter_dates(suicide, preds, date_start, date_end):
 def check_reg_res(res, date_start):
     # Test that the number of observations matches the expected
     # number of observations
-    expected_nobs = ((2020 - int(date_start[:4])) * 12 + 2)
+    ds = pd.to_datetime(date_start)
+    de = pd.to_datetime(LAST_TRAIN_DATE)
+    expected_nobs = (de.year - ds.year) * 12 + de.month - ds.month + 1
     if not res.nobs == expected_nobs:
         raise ValueError(NOBS_MSG)
 
     # Test that the number of coefficients matches the expected
     # number of coefficients
-    expected_nb_coefs = 1 + 1 + 11 + 11 + 1
-    if not len(res.params) == expected_nb_coefs:
+    if not len(res.params) == REG_NB_COEFS:
         raise ValueError(COEF_MSG)
 
 

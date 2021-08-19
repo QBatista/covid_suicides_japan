@@ -7,8 +7,12 @@ import os
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from plot import plot_unemp_suicide
+from plot_utils import plot_unemp_suicide
 
+
+# TODO(QBatista):
+# 1. Define more clearly what this script is for.
+# 2. Add distribution visualization plots
 
 def visualize_data(dfs, params, output_path):
     # Unpack arguments
