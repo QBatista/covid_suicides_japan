@@ -6,6 +6,7 @@ A module containing routines for creating plots of the model's output.
 import calendar
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from .model import compute_induced_suicides
 
 
 COVID_START = '2020-03'
@@ -227,9 +228,7 @@ def plot_preds_ts(pre_preds, post_preds, suicide, pre_conf_int):
 
 
 def plot_induced_suicides_ts(pre_preds, suicide):
-    date_end = suicide.index[-1]
-
-    data = suicide[COVID_START:] - pre_preds[COVID_START:date_end]
+    data = compute_induced_suicides(suicide, pre_preds)
 
     fig = go.Figure()
 

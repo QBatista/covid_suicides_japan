@@ -7,7 +7,7 @@ import os
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-from plot_utils import *
+from util.plot import *
 
 
 # TODO(QBatista):
@@ -192,6 +192,9 @@ def save_output(suicide, preds, path, analysis_date, date_start, data_type,
 
     pre_preds.to_csv(os.path.join(path, 'pre_preds.csv'))
     post_preds.to_csv(os.path.join(path, 'post_preds.csv'))
+
+    induced_suicide = compute_induced_suicides(suicide, pre_preds)
+    induced_suicide.to_csv(os.path.join(path, 'induced_suicide.csv'))
 
     key_nb = compute_key_numbers(pre_preds, post_preds, suicide)
 
