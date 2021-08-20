@@ -123,7 +123,82 @@ def gen_figs(params, output_path, clean_data_path):
             fig.write_image(full_path, format='pdf')
 
 
+def summary_table(params, output_path):
 
+    analysis_date = params['analysis_date']
+
+    summary_df = pd.DataFrame(index=['aggregate', 'age_only', 'gender_only', 'age_gender'],
+                              columns=['actual_minus_pre', 'post_minus_pre_future', 'post_minus_pre_present'])
+
+    # Aggregate
+    forecast_type = 'aggregate'
+    data_type = 'total'
+    age_group = 'total'
+    start_date = '2010-01'
+
+    path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                        data_type, age_group, start_date, 'key_nb.csv')
+    summary_df.loc['aggregate'] = pd.read_csv(path, index_col=0, header=None).T.values
+
+
+    # Age Only
+    df = pd.DataFrame(index= AGE_GROUPS, columns=['actual_minus_pre', 'post_minus_pre_future', 'post_minus_pre_present'])
+
+    forecast_type = 'group'
+    data_type = 'total'
+
+    for age_group in AGE_GROUPS:
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'key_nb.csv')
+        df.loc[age_group] = pd.read_csv(path, index_col=0, header=None).T.values
+
+    summary_df.loc['age_only'] = df.sum(axis=0)
+
+    # Gender only
+    forecast_type = 'group'
+    data_type = 'male'
+    age_group = 'total'
+    path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                        data_type, age_group, start_date, 'key_nb.csv')
+
+    temp = pd.read_csv(path, index_col=0, header=None).T.values
+
+    data_type = 'female'
+    path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                        data_type, age_group, start_date, 'key_nb.csv')
+
+    summary_df.loc['gender_only'] = temp + pd.read_csv(path, index_col=0, header=None).T.values
+
+    # Age-gender
+    df = pd.DataFrame(index= AGE_GROUPS, columns=['actual_minus_pre', 'post_minus_pre_future', 'post_minus_pre_present'])
+
+    forecast_type = 'group'
+    data_type = 'male'
+
+    for age_group in AGE_GROUPS:
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'key_nb.csv')
+        df.loc[age_group] = pd.read_csv(path, index_col=0, header=None).T.values
+
+    temp = df.sum(axis=0)
+
+    df = pd.DataFrame(index= AGE_GROUPS, columns=['actual_minus_pre', 'post_minus_pre_future', 'post_minus_pre_present'])
+
+    data_type = 'female'
+
+    for age_group in AGE_GROUPS:
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'key_nb.csv')
+        df.loc[age_group] = pd.read_csv(path, index_col=0, header=None).T.values
+
+    summary_df.loc['age_gender'] = temp + df.sum(axis=0)
+
+    summary_df.to_csv(os.path.join(output_path, analysis_date, 'result_analysis/summary_' + start_date + '.csv'))
+
+
+def analyze_results(params, output_path, clean_data_path):
+    summary_table(params, output_path)
+    gen_figs(params, output_path, clean_data_path)
 
 
 if __name__ == '__main__':
@@ -137,4 +212,4 @@ if __name__ == '__main__':
     with open(params_path) as file:
         params = yaml.load(file, Loader=yaml.FullLoader)
 
-    gen_figs(params, output_path, clean_data_path)
+    analyze_results(params, output_path, clean_data_path)
