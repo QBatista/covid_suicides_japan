@@ -7,7 +7,7 @@ import os
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from plot_utils import plot_unemp_suicide
+from .util.plot import plot_unemp_suicide
 
 
 # TODO(QBatista):

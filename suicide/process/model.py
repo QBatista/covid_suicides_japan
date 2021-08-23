@@ -11,12 +11,12 @@ from util.plot import *
 
 
 # TODO(QBatista):
-# 1. Aggregation analysis
-# 2. Outlier analysis (suicide-unemployment)
-# 3. Update database schema
-# 4. Get updated clean data and update `load_data`
-# 5. Modify `transform` to transform raw data into new clean data
-# 6. Modify `extract` to automatically get new raw data
+# 1. Outlier analysis (suicide-unemployment)
+# 2. Update database schema
+# 3. Get updated clean data and update `load_data`
+# 4. Modify `transform` to transform raw data into new clean data
+# 5. Modify `extract` to automatically get new raw data
+# 6. Clean up the code
 #
 # - Unit testing
 # - Documentation
