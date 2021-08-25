@@ -40,6 +40,7 @@ def load_data(params, date_start, unemp_type, output_path, clean_data_path):
 
     path = os.path.join(clean_data_path, analysis_date, 'infection_deaths.csv')
     df_infections = pd.read_csv(path, index_col=0)
+    df_infections.index = pd.to_datetime(df_infections.index)
 
     df_suicide_m = pd.DataFrame()
     df_suicide_f = pd.DataFrame()
@@ -53,6 +54,9 @@ def load_data(params, date_start, unemp_type, output_path, clean_data_path):
         path = os.path.join(output_path, analysis_date, 'model', unemp_type,
                             'female', group, date_start, 'induced_suicide.csv')
         df_suicide_f[group] = pd.read_csv(path, index_col=0).iloc[:, 0]
+
+    df_suicide_m.index = pd.to_datetime(df_suicide_m.index)
+    df_suicide_f.index = pd.to_datetime(df_suicide_f.index)
 
     dfs = (df_life_exp, df_infections, df_suicide_m, df_suicide_f)
 
@@ -75,8 +79,9 @@ def gen_figs(params, output_path, clean_data_path):
             suicide_mf_le = suicide_m_le + suicide_f_le
             suicide_le_total = (suicide_m_sum + suicide_f_sum).rename('Total')
 
-            mask = df_infections.group.isin(AGE_GROUPS)
-            infections_data = df_infections[mask].pivot(columns=['sex', 'group'], values='infection_death')
+            mask = df_infections.age_group.isin(AGE_GROUPS)
+            infections_data = df_infections[mask].pivot(columns=['gender_group', 'age_group'], values='value')
+            infections_data = infections_data[:df_suicide_m.index[-1]]
 
             infections_m_le = infections_data['male'].multiply(df_life_exp['male'])
             infections_f_le = infections_data['female'].multiply(df_life_exp['female'])
