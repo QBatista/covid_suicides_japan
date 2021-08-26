@@ -40,7 +40,6 @@ def load_data(params, date_start, unemp_type, output_path, clean_data_path):
 
     path = os.path.join(clean_data_path, analysis_date, 'infection_deaths.csv')
     df_infections = pd.read_csv(path, index_col=0)
-    df_infections.index = pd.to_datetime(df_infections.index)
 
     df_suicide_m = pd.DataFrame()
     df_suicide_f = pd.DataFrame()
@@ -55,12 +54,135 @@ def load_data(params, date_start, unemp_type, output_path, clean_data_path):
                             'female', group, date_start, 'induced_suicide.csv')
         df_suicide_f[group] = pd.read_csv(path, index_col=0).iloc[:, 0]
 
-    df_suicide_m.index = pd.to_datetime(df_suicide_m.index)
-    df_suicide_f.index = pd.to_datetime(df_suicide_f.index)
-
     dfs = (df_life_exp, df_infections, df_suicide_m, df_suicide_f)
 
     return dfs
+
+
+def plot_life_exp(params, date_start, unemp_type, output_path, clean_data_path):
+    analysis_date = params['analysis_date']
+
+    df_life_exp, df_infections, df_suicide_m, df_suicide_f = \
+        load_data(params, date_start, unemp_type, output_path,
+                  clean_data_path)
+
+    suicide_m_le = df_suicide_m.multiply(df_life_exp['male'])
+    suicide_m_sum = suicide_m_le.sum(axis=0).rename('Male')
+    suicide_m_sum.index = [group.replace('_', ' to ') for group in suicide_m_sum.index]
+
+    suicide_f_le = df_suicide_f.multiply(df_life_exp['female'])
+    suicide_f_sum = df_suicide_f.sum(axis=0).rename('Female')
+    suicide_f_sum.index = [group.replace('_', ' to ') for group in suicide_f_sum.index]
+
+    suicide_mf_le = suicide_m_le + suicide_f_le
+    suicide_le_total = (suicide_m_sum + suicide_f_sum).rename('Total')
+    suicide_le_total.index = [group.replace('_', ' to ') for group in suicide_le_total.index]
+
+    mask = df_infections.age_group.isin(AGE_GROUPS)
+    infections_data = df_infections[mask].pivot(columns=['gender_group', 'age_group'], values='value')
+
+    infections_m_le = infections_data['male'].multiply(df_life_exp['male'])
+    infections_f_le = infections_data['female'].multiply(df_life_exp['female'])
+
+    infections_m_le_sum = infections_m_le.sum(axis=0).rename('Male')
+    infections_f_le_sum = infections_f_le.sum(axis=0).rename('Female')
+
+    infections_mf_le = infections_m_le + infections_f_le
+
+    infections_le_total = (infections_m_le_sum + infections_f_le_sum).rename('Total')
+
+    # Lost life expectancy by age groups
+    title_end = ' Years of Life Expectancy Lost Due to Covid Induced Suicides vs. Infections by Age Group'
+    title = suicide_le_total.name + title_end
+    fig = plot_loss_life_exp(suicide_le_total, infections_le_total, title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'total', date_start, 'lost_life_exp_by_age.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title = suicide_m_sum.name + title_end
+    fig = plot_loss_life_exp(suicide_m_sum, infections_m_le_sum, title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'male', date_start, 'lost_life_exp_by_age.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title = suicide_f_sum.name + title_end
+
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'lost_life_exp_by_age.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    # Lost life expectancy over time
+    title = 'Total Years of Life Expectancy Lost Due to Covid Induced Suicides vs. Infections Over Time'
+    fig = plot_loss_life_exp(suicide_mf_le.sum(axis=1), infections_mf_le.sum(axis=1), title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'total', date_start, 'lost_life_exp_over_time.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title = 'Male Years of Life Expectancy Lost Due to Covid Induced Suicides vs. Infections Over Time'
+    fig = plot_loss_life_exp(suicide_m_le.sum(axis=1), infections_m_le.sum(axis=1), title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'male', date_start, 'lost_life_exp_over_time.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title = 'Female Years of Life Expectancy Lost Due to Covid Induced Suicides vs. Infections Over Time'
+    fig = plot_loss_life_exp(suicide_f_le.sum(axis=1), infections_f_le.sum(axis=1), title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'lost_life_exp_over_time.pdf')
+    fig.write_image(full_path, format='pdf')
+
+
+def plot_deaths(params, date_start, unemp_type, output_path, clean_data_path):
+    analysis_date = params['analysis_date']
+    df_life_exp, df_infections, df_suicide_m, df_suicide_f = \
+        load_data(params, date_start, unemp_type, output_path,
+                  clean_data_path)
+
+    suicide_m_sum = df_suicide_m.sum(axis=0).rename('Male')
+    suicide_m_sum.index = [group.replace('_', ' to ') for group in suicide_m_sum.index]
+
+    suicide_f_sum = df_suicide_f.sum(axis=0).rename('Female')
+    suicide_f_sum.index = [group.replace('_', ' to ') for group in suicide_f_sum.index]
+
+    suicide_mf = df_suicide_m + df_suicide_f
+    suicide_total = (suicide_m_sum + suicide_f_sum).rename('Total')
+    suicide_total.index = [group.replace('_', ' to ') for group in suicide_total.index]
+
+    mask = df_infections.age_group.isin(AGE_GROUPS)
+    infections_data = df_infections[mask].pivot(columns=['gender_group', 'age_group'], values='value')
+
+    infections_m = infections_data['male']
+    infections_f = infections_data['female']
+
+    infections_m_sum = infections_m.sum(axis=0).rename('Male')
+    infections_f_sum = infections_f.sum(axis=0).rename('Female')
+
+    infections_mf = infections_m + infections_f
+
+    infections_total = (infections_m_sum + infections_f_sum).rename('Total')
+
+    title_end = ' Covid Induced Suicides vs. Infection Deaths by Age Group'
+    title = suicide_total.name + title_end
+    fig = plot_loss_life_exp(suicide_total, infections_total, title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'total', date_start, 'suicides_vs_infections.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title = suicide_m_sum.name + title_end
+    fig = plot_loss_life_exp(suicide_m_sum, infections_m_sum, title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'male', date_start, 'suicides_vs_infections.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title = suicide_f_sum.name + title_end
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'suicides_vs_infections.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title = 'Total Covid Induced Suicides vs. Infection Deaths Over Time'
+    fig = plot_loss_life_exp(suicide_mf.sum(axis=1), infections_mf.sum(axis=1), title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'total', date_start, 'suicides_vs_infections_over_time.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title = 'Male Covid Induced Suicides vs. Infection Deaths Over Time'
+    fig = plot_loss_life_exp(df_suicide_m.sum(axis=1), infections_m.sum(axis=1), title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'male', date_start, 'suicides_vs_infections_over_time.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title = 'Female Covid Induced Suicides vs. Infection Deaths Over Time'
+    fig = plot_loss_life_exp(df_suicide_f.sum(axis=1), infections_f.sum(axis=1), title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'suicides_vs_infections_over_time.pdf')
+    fig.write_image(full_path, format='pdf')
 
 
 def gen_figs(params, output_path, clean_data_path):
@@ -68,64 +190,8 @@ def gen_figs(params, output_path, clean_data_path):
 
     for date_start in DATES_START:
         for unemp_type in UNEMP_TYPES:
-            df_life_exp, df_infections, df_suicide_m, df_suicide_f = load_data(params, date_start, unemp_type, output_path, clean_data_path)
-
-            suicide_m_le = df_suicide_m.multiply(df_life_exp['male'])
-            suicide_m_sum = suicide_m_le.sum(axis=0).rename('Male')
-
-            suicide_f_le = df_suicide_f.multiply(df_life_exp['female'])
-            suicide_f_sum = suicide_f_le.sum(axis=0).rename('Female')
-
-            suicide_mf_le = suicide_m_le + suicide_f_le
-            suicide_le_total = (suicide_m_sum + suicide_f_sum).rename('Total')
-
-            mask = df_infections.age_group.isin(AGE_GROUPS)
-            infections_data = df_infections[mask].pivot(columns=['gender_group', 'age_group'], values='value')
-            infections_data = infections_data[:df_suicide_m.index[-1]]
-
-            infections_m_le = infections_data['male'].multiply(df_life_exp['male'])
-            infections_f_le = infections_data['female'].multiply(df_life_exp['female'])
-
-            infections_m_le_sum = infections_m_le.sum(axis=0).rename('Male')
-            infections_f_le_sum = infections_f_le.sum(axis=0).rename('Female')
-
-            infections_mf_le = infections_m_le + infections_f_le
-
-            infections_le_total = (infections_m_le_sum + infections_f_le_sum).rename('Total')
-
-            # Lost life expectancy by age groups
-            title = suicide_le_total.name + ' Years of Life Expectancy Lost Due to Covid Induced Suicides vs. Infections by Age Group'
-            suicide_le_total.index = [group.replace('_', ' to ') for group in suicide_le_total.index]
-            fig = plot_loss_life_exp(suicide_le_total, infections_le_total, title)
-            full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'total', date_start, 'lost_life_exp_by_age.pdf')
-            fig.write_image(full_path, format='pdf')
-
-            title = suicide_m_sum.name + ' Years of Life Expectancy Lost Due to Covid Induced Suicides vs. Infections by Age Group'
-            suicide_m_sum.index = [group.replace('_', ' to ') for group in suicide_m_sum.index]
-            fig = plot_loss_life_exp(suicide_m_sum, infections_m_le_sum, title)
-            full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'male', date_start, 'lost_life_exp_by_age.pdf')
-            fig.write_image(full_path, format='pdf')
-
-            title = suicide_f_sum.name + ' Years of Life Expectancy Lost Due to Covid Induced Suicides vs. Infections by Age Group'
-            suicide_f_sum.index = [group.replace('_', ' to ') for group in suicide_f_sum.index]
-            full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'lost_life_exp_by_age.pdf')
-            fig.write_image(full_path, format='pdf')
-
-            # Lost life expectancy over time
-            title = 'Total Years of Life Expectancy Lost Due to Covid Induced Suicides vs. Infections Over Time'
-            fig = plot_loss_life_exp(suicide_mf_le.sum(axis=1), infections_mf_le.sum(axis=1), title)
-            full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'total', date_start, 'lost_life_exp_over_time.pdf')
-            fig.write_image(full_path, format='pdf')
-
-            title = 'Male Years of Life Expectancy Lost Due to Covid Induced Suicides vs. Infections Over Time'
-            fig = plot_loss_life_exp(suicide_m_le.sum(axis=1), infections_m_le.sum(axis=1), title)
-            full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'male', date_start, 'lost_life_exp_over_time.pdf')
-            fig.write_image(full_path, format='pdf')
-
-            title = 'Female Years of Life Expectancy Lost Due to Covid Induced Suicides vs. Infections Over Time'
-            fig = plot_loss_life_exp(suicide_f_le.sum(axis=1), infections_f_le.sum(axis=1), title)
-            full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'lost_life_exp_over_time.pdf')
-            fig.write_image(full_path, format='pdf')
+            plot_life_exp(params, date_start, unemp_type, output_path, clean_data_path)
+            plot_deaths(params, date_start, unemp_type, output_path, clean_data_path)
 
 
 def summary_table(params, output_path):
