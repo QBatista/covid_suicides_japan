@@ -18,6 +18,13 @@ AGE_GROUPS = ('0_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79',
 DATA_TYPES = ('male', 'female', 'total')
 
 
+def plot_distrib(data, title):
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=data.index, y=data))
+    fig.update_layout(title_text=title, width=1200, height=600)
+    return fig
+
+
 def plot_loss_life_exp(suicide, infections, title):
     suicide_total = suicide.sum() / 1000
     infections_total = infections.sum() / 1000
@@ -162,14 +169,50 @@ def plot_deaths(params, date_start, unemp_type, output_path, clean_data_path):
     full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'total', date_start, 'suicides_vs_infections.pdf')
     fig.write_image(full_path, format='pdf')
 
+    title_end = ' Suicides Distribution'
+    title = suicide_total.name + title_end
+    fig = plot_distrib(suicide_total, title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'total', date_start, 'suicides_dist.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title_end = ' Infections Distribution'
+    title = suicide_total.name + title_end
+    fig = plot_distrib(infections_total, title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'total', date_start, 'infections_dist.pdf')
+    fig.write_image(full_path, format='pdf')
+
     title = suicide_m_sum.name + title_end
     fig = plot_loss_life_exp(suicide_m_sum, infections_m_sum, title)
     full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'male', date_start, 'suicides_vs_infections.pdf')
     fig.write_image(full_path, format='pdf')
 
+    title_end = ' Suicides Distribution'
+    title = suicide_total.name + title_end
+    fig = plot_distrib(suicide_m_sum, title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'male', date_start, 'suicides_dist.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title_end = ' Infections Distribution'
+    title = suicide_total.name + title_end
+    fig = plot_distrib(infections_m_sum, title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'male', date_start, 'infections_dist.pdf')
+    fig.write_image(full_path, format='pdf')
+
     title = suicide_f_sum.name + title_end
     fig = plot_loss_life_exp(suicide_f_sum, infections_f_sum, title)
     full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'suicides_vs_infections.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title_end = ' Suicides Distribution'
+    title = suicide_total.name + title_end
+    fig = plot_distrib(suicide_f_sum, title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'suicides_dist.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    title_end = ' Infections Distribution'
+    title = suicide_total.name + title_end
+    fig = plot_distrib(infections_f_sum, title)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'infections_dist.pdf')
     fig.write_image(full_path, format='pdf')
 
     title = 'Total Covid Induced Suicides vs. Infection Deaths Over Time'
