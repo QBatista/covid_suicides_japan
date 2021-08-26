@@ -3,6 +3,7 @@
 import os
 import pandas as pd
 import numpy as np
+import statsmodels.api as sm
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -14,6 +15,7 @@ DATES_START = ('2009-01',
 UNEMP_TYPES = ('aggregate', 'group')
 AGE_GROUPS = ('0_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79',
               '80_99')
+DATA_TYPES = ('male', 'female', 'total')
 
 
 def plot_loss_life_exp(suicide, infections, title):
@@ -242,7 +244,7 @@ def summary_table(params, output_path):
     summary_df.loc['gender_only'] = temp + pd.read_csv(path, index_col=0, header=None).T.values
 
     # Age-gender
-    df = pd.DataFrame(index= AGE_GROUPS, columns=['actual_minus_pre', 'post_minus_pre_future', 'post_minus_pre_present'])
+    df = pd.DataFrame(index=AGE_GROUPS, columns=['actual_minus_pre', 'post_minus_pre_future', 'post_minus_pre_present'])
 
     forecast_type = 'group'
     data_type = 'male'
@@ -265,12 +267,100 @@ def summary_table(params, output_path):
 
     summary_df.loc['age_gender'] = temp + df.sum(axis=0)
 
-    summary_df.to_csv(os.path.join(output_path, analysis_date, 'result_analysis/summary_' + start_date + '.csv'))
+    summary_df.to_csv(os.path.join(output_path, analysis_date, 'result_analysis', 'summary_' + start_date + '.csv'))
+
+
+def gen_reg_analysis(params, output_path, clean_data_path):
+    analysis_date = params['analysis_date']
+
+    df = pd.DataFrame(columns=['unemp_type', 'gender_group', 'age_group', 'date_start', 'adjusted_rsquared', 'frac_outliers'])
+
+    age_groups_ext = list(AGE_GROUPS)
+    age_groups_ext.append('total')
+
+    i = 0
+    for unemp_type in UNEMP_TYPES:
+        for data_type in DATA_TYPES:
+            for age_group in age_groups_ext:
+                for date_start in DATES_START:
+                    path = os.path.join(output_path, analysis_date, 'model', unemp_type, data_type, age_group, date_start)
+                    full_path = os.path.join(path, 'regression_result.pickle')
+                    res = sm.load_pickle(full_path)
+                    frac_outliers = (res.outlier_test()['bonf(p)'] < 0.05).sum() / res.nobs
+
+                    data_vec = (unemp_type, data_type, age_group, date_start, res.rsquared_adj, frac_outliers)
+                    df.loc[i] = data_vec
+                    i += 1
+
+    data = df.groupby('unemp_type').adjusted_rsquared.mean()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=data.index, y=data))
+    title = r'$\text{Average Adjusted }R^{2}\text{ by Unemployment Type}$'
+    fig.update_layout(title_text=title)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'regression_analysis', 'rsquared_by_unemployment.pdf')
+    fig.write_image(path, format='pdf')
+
+    data = df.groupby('unemp_type').frac_outliers.mean()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=data.index, y=data))
+    title = 'Average Fraction of Outliers by Unemployment Type'
+    fig.update_layout(title_text=title)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'regression_analysis', 'frac_outliers_by_unemployment.pdf')
+    fig.write_image(path, format='pdf')
+
+    data = df.groupby('gender_group').adjusted_rsquared.mean()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=data.index, y=data))
+    title = r'$\text{Average Adjusted }R^{2}\text{ by Gender Group}$'
+    fig.update_layout(title_text=title)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'regression_analysis', 'rsquared_by_gender.pdf')
+    fig.write_image(path, format='pdf')
+
+    data = df.groupby('gender_group').frac_outliers.mean()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=data.index, y=data))
+    title = 'Average Fraction of Outliers by Gender Group'
+    fig.update_layout(title_text=title)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'regression_analysis', 'frac_outliers_by_gender.pdf')
+    fig.write_image(path, format='pdf')
+
+    data = df.groupby('age_group').adjusted_rsquared.mean()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=data.index, y=data))
+    title = r'$\text{Average Adjusted }R^{2}\text{ by Age Group}$'
+    fig.update_layout(title_text=title)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'regression_analysis', 'rsquared_by_age.pdf')
+    fig.write_image(path, format='pdf')
+
+    data = df.groupby('age_group').frac_outliers.mean()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=data.index, y=data))
+    title = 'Average Fraction of Outliers by Age Group'
+    fig.update_layout(title_text=title)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'regression_analysis', 'frac_outliers_by_age.pdf')
+    fig.write_image(path, format='pdf')
+
+    data = df.groupby('date_start').adjusted_rsquared.mean()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=data.index, y=data))
+    title = r'$\text{Average Adjusted }R^{2}\text{ by Start Date}$'
+    fig.update_layout(title_text=title)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'regression_analysis', 'rsquared_by_start_date.pdf')
+    fig.write_image(path, format='pdf')
+
+    data = df.groupby('date_start').frac_outliers.mean()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=data.index, y=data))
+    title = r'Average Fraction of Outliers by Start Date'
+    fig.update_layout(title_text=title)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'regression_analysis', 'frac_outliers_by_start_date.pdf')
+    fig.write_image(path, format='pdf')
 
 
 def analyze_results(params, output_path, clean_data_path):
     summary_table(params, output_path)
     gen_figs(params, output_path, clean_data_path)
+    gen_reg_analysis(params, output_path, clean_data_path)
 
 
 if __name__ == '__main__':
