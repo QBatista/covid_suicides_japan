@@ -71,7 +71,7 @@ def plot_life_exp(params, date_start, unemp_type, output_path, clean_data_path):
     suicide_m_sum.index = [group.replace('_', ' to ') for group in suicide_m_sum.index]
 
     suicide_f_le = df_suicide_f.multiply(df_life_exp['female'])
-    suicide_f_sum = df_suicide_f.sum(axis=0).rename('Female')
+    suicide_f_sum = suicide_f_le.sum(axis=0).rename('Female')
     suicide_f_sum.index = [group.replace('_', ' to ') for group in suicide_f_sum.index]
 
     suicide_mf_le = suicide_m_le + suicide_f_le
@@ -104,7 +104,7 @@ def plot_life_exp(params, date_start, unemp_type, output_path, clean_data_path):
     fig.write_image(full_path, format='pdf')
 
     title = suicide_f_sum.name + title_end
-
+    fig = plot_loss_life_exp(suicide_f_sum, infections_f_le_sum, title)
     full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'lost_life_exp_by_age.pdf')
     fig.write_image(full_path, format='pdf')
 
@@ -166,6 +166,7 @@ def plot_deaths(params, date_start, unemp_type, output_path, clean_data_path):
     fig.write_image(full_path, format='pdf')
 
     title = suicide_f_sum.name + title_end
+    fig = plot_loss_life_exp(suicide_f_sum, infections_f_sum, title)
     full_path = os.path.join(output_path, analysis_date, 'result_analysis', unemp_type, 'female', date_start, 'suicides_vs_infections.pdf')
     fig.write_image(full_path, format='pdf')
 
