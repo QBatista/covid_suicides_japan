@@ -10,6 +10,7 @@ Ref: https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000140901.html
 import os
 import requests
 from bs4 import BeautifulSoup
+from zipfile import ZipFile
 
 
 URL = "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000140901.html"
@@ -21,7 +22,7 @@ def get_csvs(url, year, save_path):
     soup = BeautifulSoup(html.content, 'html.parser')
     month = 1
     for link in soup.find_all("a"):
-        if "（暫定値）" in link.text:
+        if "（暫定値）" in link.text or "（確定値）" in link.text:
             r = requests.get(HOME+link.get("href"), stream=True)
 
             path = os.path.join(save_path, str(year)+"-"+f"{month:02d}"+".zip")
@@ -45,6 +46,24 @@ def suicide_dist(params, output_path):
             print(link.text)
             get_csvs(HOME+link.get("href"),year, save_path)
             year += 1
+
+    for year in range(2009,2022):
+        for month in range(1,13):
+            if year==2021 and month>=8:
+                break
+
+            filename = str(year)+"-"+f"{month:02d}"+".zip"
+            path = os.path.join(save_path, filename)
+            with ZipFile(path, 'r') as zipObj:
+                for file in zipObj.namelist():
+                    if "A1-4" in file:
+                        zipObj.extract(file, save_path)
+                        member = os.path.join(save_path, file)
+                        extract_path = os.path.join(save_path, str(year)+"-"+f"{month:02d}"+".xls")
+                        os.rename(member,extract_path)
+                        break
+            os.remove(path)
+
 
 
 
