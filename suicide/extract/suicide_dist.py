@@ -35,7 +35,7 @@ def get_csvs(url, year, save_path):
 def suicide_dist(params, output_path):
     analysis_date = params['analysis_date']
 
-    save_path = os.path.join(output_path, analysis_date, 'suicides_dist')
+    save_path = os.path.join(output_path, analysis_date, 'suicides_dist', 'monthly')
 
     html = requests.get(URL)
     soup = BeautifulSoup(html.content, 'html.parser')
@@ -63,8 +63,6 @@ def suicide_dist(params, output_path):
                         os.rename(member,extract_path)
                         break
             os.remove(path)
-
-
 
 
 if __name__ == '__main__':
