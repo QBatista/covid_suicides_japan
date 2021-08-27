@@ -62,7 +62,8 @@ def suicide_dist(params, load_path, save_path):
     weights = grp.apply(lambda x: x / x.sum())
     suicide_monthly = suicide_monthly.add(weights * diff_monthly, fill_value=0.)
 
-    suicide_monthly = suicide_monthly.melt()
+    suicide_monthly = suicide_monthly.melt(var_name=['gender_group', 'age_group'], ignore_index=False)
+    data.index.rename('date', inplace=True)
     suicide_monthly.to_csv(save_path)
 
 
