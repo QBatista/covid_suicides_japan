@@ -32,10 +32,10 @@ def get_csvs(url, year, save_path):
             month += 1
 
 
-def suicide_dist(params, output_path):
+def suicide_monthly(params, output_path):
     analysis_date = params['analysis_date']
 
-    save_path = os.path.join(output_path, analysis_date, 'suicides_dist', 'monthly')
+    save_path = os.path.join(output_path, analysis_date, 'suicide_dist', 'monthly')
 
     html = requests.get(URL)
     soup = BeautifulSoup(html.content, 'html.parser')
@@ -75,4 +75,4 @@ if __name__ == '__main__':
     with open(params_path) as file:
         params = yaml.load(file, Loader=yaml.FullLoader)
 
-    suicide_dist(params, output_path)
+    suicide_monthly(params, output_path)

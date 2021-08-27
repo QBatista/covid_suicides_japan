@@ -1,47 +1,45 @@
 """
-A script to clean the raw annual suicide data.
+A script to clean the raw annual suicide distribution data.
 
 """
 
+import os
 import pandas as pd
+import numpy as np
+
+
+COLUMNS = ['age_group', 'gender_group', 'value']
+AGE_GROUPS = ['total', '0_19', '20_29', '30_39', '40_49', '50_59', '60_69',
+              '70_79', '80_99']
 
 
 def suicide_annual(params, load_path, save_path):
-    # Unpack arguments
+
     analysis_date = params['analysis_date']
 
-    save_path += analysis_date + '/'
-    load_path += analysis_date + '/'
+    load_path = os.path.join(load_path, analysis_date, 'suicide_dist', 'annual')
+    save_path = os.path.join(save_path, analysis_date, 'suicide_dist_annual.csv')
 
-    # Load raw data
-    df = pd.read_csv(load_path + 'suicide_annual.csv',
-                     encoding='unicode_escape',
-                     skiprows=14)
+    columns = pd.MultiIndex.from_product([('male', 'female', 'total'), AGE_GROUPS])
+    data=pd.DataFrame(columns=columns)
+    for year in range(2009,2021):
 
-    # Select year/type and suicide columns
-    df_suicide = df[['Unnamed: 0', 'Deaths.16']].copy()
+        filename = str(year)+".xls"
+        path = os.path.join(load_path, filename)
+        ts = pd.to_datetime('%i/%i/%i' % (year, 1, 1))
+        xls = pd.read_excel(path,header=None)
+        male_data = xls.iloc[5, 4:41:4].values.copy()
+        male_data[1:9] += male_data[1:9] * male_data[9] / (male_data[0] - male_data[9])
 
-    # Rename columns
-    df_suicide.columns = ['date', 'suicides']
+        female_data = xls.iloc[6, 4:41:4].values.copy()
+        female_data[1:9] += female_data[1:9] * female_data[9] / (female_data[0] - female_data[9])
 
-    # Find types (total, male, female)
-    type_data = df_suicide.date[df_suicide.suicides.isna()].str.lower()
+        row = np.r_[male_data[:9], female_data[:9], male_data[:9] + female_data[:9]]
+        data.loc[ts,:] = row
 
-    # Construct a columns of types
-    df_suicide.loc[type_data.index, 'type'] = type_data.values
-    df_suicide.type.fillna(method='ffill', inplace=True)
-    df_suicide.dropna(inplace=True)
-
-    # Pivot data
-    df_suicide = df_suicide.pivot(index='date', columns='type',
-                                  values='suicides')
-    df_suicide = df_suicide[['total', 'male', 'female']]
-
-    # Use datetime index
-    df_suicide.index = pd.to_datetime(df_suicide.index)
-
-    # Save data to csv
-    df_suicide.to_csv(save_path + 'suicide_annual.csv')
+    data = data.melt(var_name=['gender_group', 'age_group'], ignore_index=False)
+    data.index.rename('date', inplace=True)
+    data.to_csv(save_path)
 
 
 if __name__ == '__main__':

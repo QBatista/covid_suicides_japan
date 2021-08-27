@@ -33,7 +33,7 @@ def suicide_annual(params, output_path):
     # Unpack parameters
     analysis_date = params['analysis_date']
 
-    save_path = os.path.join(output_path, analysis_date, 'suicides_dist', 'annual')
+    save_path = os.path.join(output_path, analysis_date, 'suicide_dist', 'annual')
 
     html = requests.get(URL)
     soup = BeautifulSoup(html.content, 'html.parser')
