@@ -7,3 +7,4 @@ urllib
 petl
 yaml
 plotly
+datefinder
