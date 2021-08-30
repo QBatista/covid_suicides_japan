@@ -11,10 +11,8 @@ from util.plot import *
 
 
 # TODO(QBatista):
-# 2. Get updated clean data and update `load_data`
-# 3. Modify `transform` to transform raw data into new clean data
-# 4. Modify `extract` to automatically get new raw data
-# 5. Clean up the code
+# 1. Update `load_data`
+# 2. Clean up the code
 #
 # - Unit testing
 # - Documentation

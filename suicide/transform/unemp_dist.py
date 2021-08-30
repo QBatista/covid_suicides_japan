@@ -68,6 +68,7 @@ def unemp_dist(params, load_path, save_path):
     df_final = df_final['2008':].apply(remove_seasonality)
     df_final.index.rename('date', inplace=True)
     df_final = df_final.melt(var_name=['gender_group', 'age_group'], ignore_index=False)
+    df_final = df_final[['age_group', 'gender_group', 'value']]
 
     path = os.path.join(save_path, analysis_date, 'unemp_dist.csv')
     df_final.to_csv(path)
