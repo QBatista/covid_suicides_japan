@@ -2,7 +2,7 @@
 A script to download data for life expectancy by age for different genders
 from the Ministry of Health, Labor, and Welfare (厚生労働省).
 
-Ref: https://www.stat.go.jp/data/roudou/longtime/03roudou.html#hyo_1
+Ref: https://www.mhlw.go.jp/toukei/saikin/hw/life/life19/index.html
 
 """
 
