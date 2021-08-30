@@ -11,7 +11,6 @@ from util.plot import *
 
 
 # TODO(QBatista):
-# 1. Outlier analysis (suicide-unemployment)
 # 2. Get updated clean data and update `load_data`
 # 3. Modify `transform` to transform raw data into new clean data
 # 4. Modify `extract` to automatically get new raw data
