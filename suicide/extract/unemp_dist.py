@@ -1,6 +1,6 @@
 """
-A script to download data for the total, male, and female unemployment rate
-at a monthly frequency the Statistics Bureau of Japan　(総務省統計局).
+A script to download data for the unemployment rate for different genders and
+age groups from the Statistics Bureau of Japan (総務省統計局).
 
 Ref: https://www.stat.go.jp/data/roudou/longtime/03roudou.html#hyo_1
 
@@ -9,7 +9,7 @@ Ref: https://www.stat.go.jp/data/roudou/longtime/03roudou.html#hyo_1
 import requests
 
 
-URL = 'https://www.stat.go.jp/data/roudou/longtime/zuhyou/lt01-a10.xlsx'
+URL = 'https://www.stat.go.jp/data/roudou/longtime/zuhyou/lt01-a90.xlsx'
 
 
 def unemp(params, output_path):
@@ -20,10 +20,10 @@ def unemp(params, output_path):
 
     req = requests.get(URL)
     url_content = req.content
-    csv_file = open(file_path + 'unemp.xlxs', 'wb')
+    file = open(file_path + 'unemp_dist.xlsx', 'wb')
 
-    csv_file.write(url_content)
-    csv_file.close()
+    file.write(url_content)
+    file.close()
 
 
 if __name__ == '__main__':
