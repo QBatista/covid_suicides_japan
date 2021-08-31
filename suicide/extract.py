@@ -8,9 +8,11 @@ import yaml
 import extract
 
 
+# TODO(QBatista): Fix warnings
+
 if __name__ == '__main__':
     params_path = 'parameters.yml'
-    raw_data_path = 'raw_data/'
+    raw_data_path = 'raw_data'
 
     # Load parameters
     with open(params_path) as file:
@@ -19,13 +21,13 @@ if __name__ == '__main__':
     analysis_date = params['analysis_date']
     print("Start extracting data for " + analysis_date + '.')
 
-    directory = raw_data_path + analysis_date + '/'
+    directory = os.path.join(raw_data_path, analysis_date)
     if not os.path.exists(directory):
         print("Create directory for " + analysis_date + ": done.")
         os.makedirs(directory)
 
-    extract.unemp(params, raw_data_path)
-    print("Extract unemployment data: done.")
+    extract.unemp_dist(params, raw_data_path)
+    print("Extract unemployment distribution data: done.")
 
     extract.suicide_annual(params, raw_data_path)
     print("Extract annual suicide data: done.")
@@ -33,9 +35,17 @@ if __name__ == '__main__':
     extract.suicide_monthly(params, raw_data_path)
     print("Extract monthly suicide data: done.")
 
-    forecast_directory = directory + 'forecast/'
+    forecast_directory = os.path.join(directory, 'forecast')
     if not os.path.exists(forecast_directory):
         os.makedirs(forecast_directory)
 
     extract.forecast(params, raw_data_path)
     print("Extract forecast data: done.")
+
+    extract.life_expectancy(params, raw_data_path)
+    print("Extract life expectancy data: done.")
+
+    extract.infections(params, raw_data_path)
+    print("Extract infection deaths data: done.")
+
+    print("Data Extraction Successfully Completed!")

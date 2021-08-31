@@ -30,6 +30,12 @@ def get_csvs2(url, year, save_path):
 
 
 def suicide_annual(params, output_path):
+    """
+    Download annual suicide data and save it to the `output_path` folder
+    based on `params['analysis_date']`.
+
+    """
+
     # Unpack parameters
     analysis_date = params['analysis_date']
 
@@ -62,8 +68,8 @@ def suicide_annual(params, output_path):
 if __name__ == '__main__':
     import yaml
 
-    params_path = '../parameters.yml'
-    output_path = "../raw_data/"
+    params_path = os.path.join(os.pardir, 'parameters.yml')
+    output_path = os.path.join(os.pardir, 'raw_data')
 
     # Load parameters
     with open(params_path) as file:

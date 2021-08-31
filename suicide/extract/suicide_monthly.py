@@ -13,56 +13,104 @@ from bs4 import BeautifulSoup
 from zipfile import ZipFile
 
 
-URL = "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000140901.html"
-HOME = "https://www.mhlw.go.jp"
+URL_HOME = "https://www.mhlw.go.jp"
+URL_DATA = "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000140901.html"
+START_YEAR = 2009  # Initial year for the data
 
 
-def get_csvs(url, year, save_path):
+def get_zip(url, year, save_path):
+    """
+    Download monthly suicide data as zip files for a given `year` and save
+    them to `save_path`.
+
+    Parameters
+    ----------
+    url : str
+        URL for the MHLW webpage with monthly suicide data for `year`.
+
+    year : int
+        Year for the monthly suicide data.
+
+    save_path : str
+        Path for saving the zip file.
+
+    """
+
+    # Get html
     html = requests.get(url)
     soup = BeautifulSoup(html.content, 'html.parser')
+
     month = 1
     for link in soup.find_all("a"):
         if "（暫定値）" in link.text or "（確定値）" in link.text:
-            r = requests.get(HOME+link.get("href"), stream=True)
+            month_url = URL_HOME + link.get("href")
+            r = requests.get(month_url, stream=True)
 
-            path = os.path.join(save_path, str(year)+"-"+f"{month:02d}"+".zip")
-            with open(path, 'wb') as fd:
+            # Save zip file
+            name = str(year) + "-" + f"{month:02d}" + ".zip"
+            full_path = os.path.join(save_path, name)
+            with open(full_path, 'wb') as fd:
                 for chunk in r.iter_content(chunk_size=128):
                     fd.write(chunk)
+
+            # Increment month count
             month += 1
 
 
-def suicide_monthly(params, output_path):
-    analysis_date = params['analysis_date']
+def extract_zip(year, save_path):
+    """
+    Extract all existing zip files for monthly suicide data in `year`, save
+    the output to `save_path`, and delete extracted zip files.
 
-    save_path = os.path.join(output_path, analysis_date, 'suicide_dist', 'monthly')
+    """
 
-    html = requests.get(URL)
-    soup = BeautifulSoup(html.content, 'html.parser')
+    for month in range(1, 13):
+        filename = str(year) + "-" + f"{month:02d}"
+        path = os.path.join(save_path, filename + ".zip")
 
-    year=2009
-    for link in soup.find(class_="m-listLink").find_all("a"):
-        if "（平成" in link.text or "（令和" in link.text:
-            print(link.text)
-            get_csvs(HOME+link.get("href"),year, save_path)
-            year += 1
-
-    for year in range(2009,2022):
-        for month in range(1,13):
-            if year==2021 and month>=8:
-                break
-
-            filename = str(year)+"-"+f"{month:02d}"+".zip"
-            path = os.path.join(save_path, filename)
+        # Check if zip file exists
+        if os.path.exists(path):
+            # Extract zip file
             with ZipFile(path, 'r') as zipObj:
                 for file in zipObj.namelist():
                     if "A1-4" in file:
                         zipObj.extract(file, save_path)
                         member = os.path.join(save_path, file)
-                        extract_path = os.path.join(save_path, str(year)+"-"+f"{month:02d}"+".xls")
-                        os.rename(member,extract_path)
+                        full_filename = filename + ".xls"
+                        extract_path = os.path.join(save_path, full_filename)
+                        os.rename(member, extract_path)
                         break
+            # Delete zip file
             os.remove(path)
+
+def suicide_monthly(params, output_path):
+    """
+    Download monthly suicide data and save it to the `output_path` folder
+    based on `params['analysis_date']`.
+
+    """
+
+    # Unpack parameters
+    analysis_date = params['analysis_date']
+
+    save_path = os.path.join(output_path, analysis_date, 'suicide_dist', 'monthly')
+
+    html = requests.get(URL_DATA)
+    soup = BeautifulSoup(html.content, 'html.parser')
+
+    # # Set initial year
+    # year = START_YEAR
+    # for link in soup.find(class_="m-listLink").find_all("a"):
+    #     if "（平成" in link.text or "（令和" in link.text:
+    #         year_url = URL_HOME + link.get("href")
+    #         get_zip(year_url, year, save_path)
+    #
+    #         # Increment year count
+    #         year += 1
+
+    # Extract all zip files
+    for y in range(START_YEAR, 2021 + 1):
+        extract_zip(y, save_path)
 
 
 if __name__ == '__main__':

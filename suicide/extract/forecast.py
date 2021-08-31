@@ -3,6 +3,7 @@ A script to download data for forecasted unemployment.
 
 """
 
+import os
 from datetime import datetime as dt
 import requests
 from bs4 import BeautifulSoup
@@ -16,7 +17,8 @@ def download_pdf(url, name, path):
     file_name = url[url.rfind('/')+1:]
 
     if r.status_code != 404:
-        open(path + file_name, 'wb').write(r.content)
+        write_path = os.path.join(path, file_name)
+        open(write_path, 'wb').write(r.content)
     else:
         print('Failed to download the report for ' + name)
 
@@ -32,7 +34,8 @@ def mufj(path):
         MUFJ_url = start + str(i).zfill(2) + "/" + file_name
         r = requests.get(MUFJ_url, allow_redirects=True)
         if r.status_code != 404:
-            open(path + file_name, 'wb').write(r.content)
+            write_path = os.path.join(path, file_name)
+            open(write_path, 'wb').write(r.content)
             downloaded = True
             break
 
@@ -174,7 +177,8 @@ def jcer(path):
     r = requests.get(url, allow_redirects=True)
     file_name = url[url.rfind('/')+1:]
     if r.status_code != 404:
-        open(path + 'jcer.pdf', 'wb').write(r.content)
+        write_path = os.path.join(path, 'jcer.pdf')
+        open(write_path, 'wb').write(r.content)
     else:
         print('Failed to download the report for JCER.')
 
@@ -208,8 +212,16 @@ def tdb(path):
 
 
 def forecast(params, output_path):
+    """
+    Download unemployment rate forecast data and save it to the
+    `output_path` folder based on `params['analysis_date']`. Note that
+    some forecasts need to be downloaded manually.
+
+    """
+
+
     analysis_date = params['analysis_date']
-    path = output_path + analysis_date + '/forecast/'
+    path = os.path.join(output_path, analysis_date, 'forecast')
 
     mufj(path)
     daiwa(path)
@@ -228,8 +240,8 @@ def forecast(params, output_path):
 if __name__ == '__main__':
     import yaml
 
-    params_path = '../parameters.yml'
-    output_path = "../raw_data/"
+    params_path = os.path.join(os.pardir, 'parameters.yml')
+    output_path = os.path.join(os.pardir, 'raw_data')
 
     # Load parameters
     with open(params_path) as file:

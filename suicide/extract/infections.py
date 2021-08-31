@@ -16,26 +16,32 @@ URL = "http://www.ipss.go.jp/projects/j/Choju/covid19/data/japan_deaths.xlsx"
 
 
 def infections(params, output_path):
+    """
+    Download infection deaths data and save it to the `output_path` folder
+    based on `params['analysis_date']`.
+
+    """
+
     # Unpack parameters
     analysis_date = params['analysis_date']
 
-    file_path = os.path.join(output_path, analysis_date, 'infections.xlsx')
-
+    # Get file
     file = pd.read_excel(URL, None, header=None)
-    writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
 
+    # Save file
+    file_path = os.path.join(output_path, analysis_date, 'infections.xlsx')
+    writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
     for sheet_name in file.keys():
         file[sheet_name].to_excel(writer, sheet_name=sheet_name, header=None,
                                   index=None)
-
     writer.save()
 
 
 if __name__ == '__main__':
     import yaml
 
-    params_path = '../parameters.yml'
-    output_path = "../raw_data/"
+    params_path = os.path.join(os.pardir, 'parameters.yml')
+    output_path = os.path.join(os.pardir, 'raw_data')
 
     # Load parameters
     with open(params_path) as file:

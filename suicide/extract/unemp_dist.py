@@ -6,22 +6,30 @@ Ref: https://www.stat.go.jp/data/roudou/longtime/03roudou.html#hyo_1
 
 """
 
+import os
 import requests
 
 
 URL = 'https://www.stat.go.jp/data/roudou/longtime/zuhyou/lt01-a90.xlsx'
 
 
-def unemp(params, output_path):
+def unemp_dist(params, output_path):
+    """
+    Download unemployment rate distribution data and save it to the
+    `output_path` folder based on `params['analysis_date']`.
+
+    """
+
     # Unpack parameters
     analysis_date = params['analysis_date']
 
-    file_path = output_path + analysis_date + '/'
-
+    # Get file
     req = requests.get(URL)
     url_content = req.content
-    file = open(file_path + 'unemp_dist.xlsx', 'wb')
 
+    # Save file
+    file_path = os.path.join(output_path, analysis_date, 'unemp_dist.xlsx')
+    file = open(file_path, 'wb')
     file.write(url_content)
     file.close()
 
@@ -29,11 +37,11 @@ def unemp(params, output_path):
 if __name__ == '__main__':
     import yaml
 
-    params_path = '../parameters.yml'
-    output_path = "../raw_data/"
+    params_path = os.path.join(os.pardir, 'parameters.yml')
+    output_path = os.path.join(os.pardir, 'raw_data')
 
     # Load parameters
     with open(params_path) as file:
         params = yaml.load(file, Loader=yaml.FullLoader)
 
-    unemp(params, output_path)
+    unemp_dist(params, output_path)
