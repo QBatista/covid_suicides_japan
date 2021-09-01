@@ -29,6 +29,14 @@ if __name__ == '__main__':
     extract.unemp_dist(params, raw_data_path)
     print("Extract unemployment distribution data: done.")
 
+    suicide_dist_directory = os.path.join(directory, 'suicide_dist')
+    if not os.path.exists(suicide_dist_directory):
+        annual_dir = os.path.join(suicide_dist_directory, 'annual')
+        os.makedirs(annual_dir)
+
+        monthly_dir = os.path.join(suicide_dist_directory, 'monthly')
+        os.makedirs(monthly_dir)
+
     extract.suicide_annual(params, raw_data_path)
     print("Extract annual suicide data: done.")
 

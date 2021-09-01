@@ -98,15 +98,15 @@ def suicide_monthly(params, output_path):
     html = requests.get(URL_DATA)
     soup = BeautifulSoup(html.content, 'html.parser')
 
-    # # Set initial year
-    # year = START_YEAR
-    # for link in soup.find(class_="m-listLink").find_all("a"):
-    #     if "（平成" in link.text or "（令和" in link.text:
-    #         year_url = URL_HOME + link.get("href")
-    #         get_zip(year_url, year, save_path)
-    #
-    #         # Increment year count
-    #         year += 1
+    # Set initial year
+    year = START_YEAR
+    for link in soup.find(class_="m-listLink").find_all("a"):
+        if "（平成" in link.text or "（令和" in link.text:
+            year_url = URL_HOME + link.get("href")
+            get_zip(year_url, year, save_path)
+
+            # Increment year count
+            year += 1
 
     # Extract all zip files
     for y in range(START_YEAR, 2021 + 1):
