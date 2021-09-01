@@ -13,7 +13,7 @@ AGE_GROUPS = ['total', '0_19', '20_29', '30_39', '40_49', '50_59', '60_69',
               '70_79', '80_99']
 
 
-def suicide_dist(params, load_path, save_path):
+def suicide_dist_monthly(params, load_path, save_path):
     # Unpack arguments
     analysis_date = params['analysis_date']
 
@@ -78,4 +78,4 @@ if __name__ == '__main__':
     with open(params_path) as file:
         params = yaml.load(file, Loader=yaml.FullLoader)
 
-    suicide_dist(params, load_path, save_path)
+    suicide_dist_monthly(params, load_path, save_path)

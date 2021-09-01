@@ -25,11 +25,19 @@ if __name__ == '__main__':
         print("Create directory for " + analysis_date + ": done.")
         os.makedirs(directory)
 
-    transform.unemp(params, raw_data_path, clean_data_path)
-    print("Clean unemployment data: done.")
+    transform.unemp_dist(params, raw_data_path, clean_data_path)
+    print("Clean unemployment distribution data: done.")
 
-    transform.suicide_annual(params, raw_data_path, clean_data_path)
-    print("Clean annual suicide data: done.")
+    transform.suicide_dist_annual(params, raw_data_path, clean_data_path)
+    print("Clean annual suicide distribution data: done.")
 
-    transform.suicide_monthly(params, raw_data_path, clean_data_path)
-    print("Clean monthly suicide data: done.")
+    transform.suicide_dist_monthly(params, raw_data_path, clean_data_path)
+    print("Clean monthly suicide distribution data: done.")
+
+    transform.infections(params, raw_data_path, clean_data_path)
+    print("Clean infection deaths data: done.")
+
+    transform.life_expectancy(params, raw_data_path, clean_data_path)
+    print("Clean life expectancy data: done.")
+
+    print("Successfully Cleaned Data!")
