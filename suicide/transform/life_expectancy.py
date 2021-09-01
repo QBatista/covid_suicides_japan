@@ -65,9 +65,9 @@ def life_expectancy(params, load_path, save_path):
 if __name__ == '__main__':
     import yaml
 
-    params_path = '../parameters.yml'
-    save_path = '../clean_data/'
-    load_path = '../raw_data/'
+    params_path = os.path.join(os.pardir, 'parameters.yml')
+    save_path = os.path.join(os.pardir, 'clean_data')
+    load_path = os.path.join(os.pardir, 'raw_data')
 
     # Load parameters
     with open(params_path) as file:
