@@ -70,8 +70,8 @@ if __name__ == '__main__':
     # process.visualize_data(dfs, params, output_path)
     # print("Generate data visualization figures: done.")
 
-    # process.run_model(dfs, params, output_path)
-    # print("Generate model figures: done.")
-    #
-    # process.analyze_results(params, output_path, clean_data_path)
-    # print("Generate regression analysis: done.")
+    process.run_model(dfs, params, output_path)
+    print("Generate model figures: done.")
+
+    process.analyze_results(params, output_path, clean_data_path)
+    print("Generate regression analysis: done.")

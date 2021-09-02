@@ -20,7 +20,7 @@ if __name__ == '__main__':
     analysis_date = params['analysis_date']
     print("Start transforming data for " + analysis_date + '.')
 
-    directory = clean_data_path + analysis_date + '/'
+    directory = os.path.join(clean_data_path, analysis_date)
     if not os.path.exists(directory):
         print("Create directory for " + analysis_date + ": done.")
         os.makedirs(directory)
@@ -40,4 +40,4 @@ if __name__ == '__main__':
     transform.life_expectancy(params, raw_data_path, clean_data_path)
     print("Clean life expectancy data: done.")
 
-    print("Successfully Cleaned Data!")
+    print("Successfully cleaned data!")

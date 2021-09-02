@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as np
 
 
+# TODO(QBatista): Remove hard-coded months
+
 COLUMNS = ['age_group', 'gender_group', 'value']
 AGE_GROUPS = ['total', '0_19', '20_29', '30_39', '40_49', '50_59', '60_69',
               '70_79', '80_99']
@@ -25,7 +27,7 @@ def suicide_dist_monthly(params, load_path, save_path):
     data=pd.DataFrame(columns=columns)
     for year in range(2009,2022):
         for month in range(1,13):
-            if year==2021 and month>=7:
+            if year==2021 and month>=8:
                 break
 
             path = os.path.join(load_path, str(year)+"-"+f"{month:02d}"+".xls")
