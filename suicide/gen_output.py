@@ -32,6 +32,17 @@ def create_directories(directory):
     for d in dirs:
         os.makedirs(d)
 
+    dirs = [os.path.join(directory, 'result_analysis', forecast_type,
+                         data_type, date_start)
+            for forecast_type in forecast_types
+            for data_type in data_types
+            for date_start in dates_start]
+
+    for d in dirs:
+        os.makedirs(d)
+
+    os.makedirs(os.path.join(directory, 'result_analysis', 'regression_analysis'))
+
 
 if __name__ == '__main__':
     params_path = 'parameters.yml'
@@ -56,8 +67,11 @@ if __name__ == '__main__':
         create_directories(directory)
 
     # Generate figures
-    process.visualize_data(dfs, params, output_path)
-    print("Generate data visualization figures: done.")
+    # process.visualize_data(dfs, params, output_path)
+    # print("Generate data visualization figures: done.")
 
-    process.run_model(dfs, params, output_path)
-    print("Generate model figures: done.")
+    # process.run_model(dfs, params, output_path)
+    # print("Generate model figures: done.")
+    #
+    # process.analyze_results(params, output_path, clean_data_path)
+    # print("Generate regression analysis: done.")

@@ -27,17 +27,17 @@ def visualize_data(dfs, params, output_path):
 
     start_date = '1991-01'
     path = os.path.join(output_path, analysis_date, 'data_visualization', 'annual_total_ts_scatter.pdf')
-    fig = plot_unemp_suicide(df_suicide_annual.loc[start_date:, 'total'],
+    fig = plot_unemp_suicide(df_suicide_annual.loc[start_date:, ('total', 'total')].rename('Total'),
                              df_unemp_annual.loc[start_date:, 'total'])
     fig.write_image(path, format='pdf')
 
     path = os.path.join(output_path, analysis_date, 'data_visualization', 'annual_male_ts_scatter.pdf')
-    fig = plot_unemp_suicide(df_suicide_annual.loc[start_date:, 'male'],
+    fig = plot_unemp_suicide(df_suicide_annual.loc[start_date:, ('male', 'total')].rename('Male'),
                              df_unemp_annual.loc[start_date:, 'male'])
     fig.write_image(path, format='pdf')
 
     path = os.path.join(output_path, analysis_date, 'data_visualization', 'annual_female_ts_scatter.pdf')
-    fig = plot_unemp_suicide(df_suicide_annual.loc[start_date:, 'female'],
+    fig = plot_unemp_suicide(df_suicide_annual.loc[start_date:, ('female', 'total')].rename('Female'),
                              df_unemp_annual.loc[start_date:, 'female'])
     fig.write_image(path, format='pdf')
 

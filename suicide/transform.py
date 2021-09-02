@@ -10,8 +10,8 @@ import yaml
 
 if __name__ == '__main__':
     params_path = 'parameters.yml'
-    raw_data_path = 'raw_data/'
-    clean_data_path = 'clean_data/'
+    raw_data_path = 'raw_data'
+    clean_data_path = 'clean_data'
 
     # Load parameters
     with open(params_path) as file:

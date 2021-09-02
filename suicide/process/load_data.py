@@ -15,7 +15,9 @@ def load_unemp_data(params, clean_data_path):
 
     # Load distribution data
     dist_path = os.path.join(clean_data_path, analysis_date, 'unemp_dist.csv')
-    df_unemp_dist = pd.read_csv(dist_path, index_col=0, header=[0, 1])
+    df_unemp_dist = pd.read_csv(dist_path, index_col=0)
+    df_unemp_dist = df_unemp_dist.pivot(columns=['gender_group', 'age_group'],
+                                        values='value')
     idx = pd.to_datetime(df_unemp_dist.index).to_period('M').to_timestamp()
     df_unemp_dist.index = idx
 
@@ -33,16 +35,20 @@ def load_suicide_data(params, clean_data_path):
     factor = params['factor']
 
     # Load distribution suicide data
-    dist_path = os.path.join(clean_data_path, analysis_date, 'suicide_dist.csv')
-    df_suicide_dist = pd.read_csv(dist_path, index_col=0, header=[0, 1])
-    df_suicide_dist.index = pd.to_datetime(df_suicide_dist.index)
+    dist_path = os.path.join(clean_data_path, analysis_date, 'suicide_dist_monthly.csv')
+    df_suicide_monthly = pd.read_csv(dist_path, index_col=0)
+    df_suicide_monthly = df_suicide_monthly.pivot(columns=['gender_group', 'age_group'],
+                                            values='value')
+    df_suicide_monthly.index = pd.to_datetime(df_suicide_monthly.index)
 
     # Load annual suicide data
-    annual_path = os.path.join(clean_data_path, analysis_date, 'suicide_annual.csv')
+    annual_path = os.path.join(clean_data_path, analysis_date, 'suicide_dist_annual.csv')
     df_suicide_annual = pd.read_csv(annual_path, index_col=0)
+    df_suicide_annual = df_suicide_annual.pivot(columns=['gender_group', 'age_group'],
+                                            values='value')
     df_suicide_annual.index = pd.to_datetime(df_suicide_annual.index)
 
-    return df_suicide_dist, df_suicide_annual
+    return df_suicide_monthly, df_suicide_annual
 
 
 def load_forecast_data(df_unemp_dist, params, clean_data_path):
@@ -96,7 +102,7 @@ def load_data(params, clean_data_path):
     (df_unemp_dist,
      df_unemp_annual) = load_unemp_data(params, clean_data_path)
 
-    (df_suicide_dist,
+    (df_suicide_monthly,
      df_suicide_annual) = load_suicide_data(params, clean_data_path)
 
     (df_forecast_total,
@@ -104,7 +110,7 @@ def load_data(params, clean_data_path):
                                                  clean_data_path)
 
     dfs = (df_unemp_dist,
-           df_suicide_dist,
+           df_suicide_monthly,
            df_forecast_total,
            df_unemp_annual,
            df_suicide_annual,
