@@ -11,8 +11,7 @@ from .util.plot import *
 
 
 # TODO(QBatista):
-# 1. Update `load_data`
-# 2. Clean up the code
+# 1. Clean up the code
 #
 # - Unit testing
 # - Documentation
