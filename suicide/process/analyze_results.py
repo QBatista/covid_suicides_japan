@@ -75,6 +75,10 @@ def load_data(params, date_start, unemp_type, output_path, clean_data_path):
                             'female', group, date_start, 'induced_suicide.csv')
         df_suicide_f[group] = pd.read_csv(path, index_col=0).iloc[:, 0]
 
+    df_suicide_m.index = pd.to_datetime(df_suicide_m.index)
+    df_suicide_f.index = pd.to_datetime(df_suicide_f.index)
+    df_infections.index = pd.to_datetime(df_infections.index)
+
     dfs = (df_life_exp, df_infections, df_suicide_m, df_suicide_f)
 
     return dfs
@@ -86,6 +90,8 @@ def plot_life_exp(params, date_start, unemp_type, output_path, clean_data_path):
     df_life_exp, df_infections, df_suicide_m, df_suicide_f = \
         load_data(params, date_start, unemp_type, output_path,
                   clean_data_path)
+
+    last_date = df_suicide_m.index[-1]
 
     suicide_m_le = df_suicide_m.multiply(df_life_exp.loc[AGE_GROUPS, 'male'])
     suicide_m_sum = suicide_m_le.sum(axis=0).rename('Male')
@@ -101,6 +107,8 @@ def plot_life_exp(params, date_start, unemp_type, output_path, clean_data_path):
 
     mask = df_infections.age_group.isin(INFECTIONS_AGE_GROUPS)
     infections_data = df_infections[mask].pivot(columns=['gender_group', 'age_group'], values='value')
+    infections_data = infections_data[:last_date]
+
 
     infections_m_le = infections_data['male'].multiply(df_life_exp.loc[INFECTIONS_AGE_GROUPS, 'male'])
     infections_m_le['80_99'] = infections_m_le['80_89'] + infections_m_le['90_99']
