@@ -6,6 +6,14 @@ import numpy as np
 import statsmodels.api as sm
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from load_data import load_suicide_data
+from util.plot import *
+from model import filter_dates
+
+
+# TODO(QBatista):
+# 1. Find better names for the folders
+# 2. Use parameter for generating summaries
 
 
 DATES_START = ('2009-01',
@@ -310,7 +318,7 @@ def summary_table(params, output_path):
 
     summary_df.loc['age_gender'] = temp + df.sum(axis=0)
 
-    summary_df.to_csv(os.path.join(output_path, analysis_date, 'result_analysis', 'summary_' + start_date + '.csv'))
+    summary_df.to_csv(os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'summary_' + start_date + '.csv'))
 
 
 def gen_reg_analysis(params, output_path, clean_data_path):
@@ -400,10 +408,213 @@ def gen_reg_analysis(params, output_path, clean_data_path):
     fig.write_image(path, format='pdf')
 
 
+def summary_figures(params, output_path, clean_data_path):
+    analysis_date = params['analysis_date']
+
+    df_suicide_monthly, _ = load_suicide_data(params, clean_data_path)
+    suicide = df_suicide_monthly.total.total.rename('Total')
+    suicide.index = pd.to_datetime(suicide.index)
+
+    # Aggregate
+    forecast_type = 'aggregate'
+    data_type = 'total'
+    age_group = 'total'
+    start_date = '2010-01'
+
+    path_start = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                        data_type, age_group, start_date)
+    pre_path = os.path.join(path_start, 'pre_preds.csv')
+    pre_pred = pd.read_csv(pre_path, index_col=0).pred
+    pre_pred.index = pd.to_datetime(pre_pred.index).rename('date')
+
+    post_path = os.path.join(path_start, 'post_preds.csv')
+    post_pred = pd.read_csv(post_path, index_col=0).pred
+    post_pred.index = pd.to_datetime(post_pred.index).rename('date')
+
+    conf_int_path = os.path.join(path_start, 'pre_conf_int.csv')
+    pre_conf_int = pd.read_csv(conf_int_path, index_col=0).values
+
+    preds = (pre_pred, post_pred, pre_conf_int)
+
+    date_end = suicide.index[-1]
+    plot_start = '2019-01'
+    args = filter_dates(suicide, preds, plot_start, date_end)
+    fig = plot_preds_ts(*args)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'aggregate', 'unemp_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    fig = plot_induced_suicides_ts(args[0], args[2])
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'aggregate', 'induced_suicides_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    fig = plot_explained_unemp_ts(args[0], args[1], suicide.name)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'aggregate', 'explained_unemp_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'aggregate', 'pre_preds.csv')
+    pre_pred.to_csv(path)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'aggregate', 'post_preds.csv')
+    post_pred.to_csv(path)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'aggregate', 'suicide.csv')
+    suicide.to_csv(path)
+
+    # Age Only
+    pre_pred[:] = 0.
+    post_pred[:] = 0.
+    pre_conf_int[:] = 0.
+
+    forecast_type = 'group'
+    data_type = 'total'
+
+    for age_group in AGE_GROUPS:
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'pre_preds.csv')
+        pre_pred += pd.read_csv(path, index_col=0).pred.values
+
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'post_preds.csv')
+        post_pred += pd.read_csv(path, index_col=0).pred.values
+
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'pre_conf_int.csv')
+        pre_conf_int += pd.read_csv(path, index_col=0).values
+
+    args = filter_dates(suicide, preds, plot_start, date_end)
+    fig = plot_preds_ts(*args)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_only', 'unemp_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    fig = plot_induced_suicides_ts(args[0], args[2])
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_only', 'induced_suicides_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    fig = plot_explained_unemp_ts(args[0], args[1], suicide.name)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_only', 'explained_unemp_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_only', 'pre_preds.csv')
+    pre_pred.to_csv(path)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_only', 'post_preds.csv')
+    post_pred.to_csv(path)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_only', 'suicide.csv')
+    suicide.to_csv(path)
+
+    # Gender only
+    pre_pred[:] = 0.
+    post_pred[:] = 0.
+    pre_conf_int[:] = 0.
+
+    forecast_type = 'group'
+    data_type = 'male'
+    age_group = 'total'
+    path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                        data_type, age_group, start_date, 'pre_preds.csv')
+    pre_pred += pd.read_csv(path, index_col=0).pred.values
+
+    path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                        data_type, age_group, start_date, 'post_preds.csv')
+    post_pred += pd.read_csv(path, index_col=0).pred.values
+
+    path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                        data_type, age_group, start_date, 'pre_conf_int.csv')
+    pre_conf_int += pd.read_csv(path, index_col=0).values
+
+    data_type = 'female'
+    path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                        data_type, age_group, start_date, 'pre_preds.csv')
+    pre_pred += pd.read_csv(path, index_col=0).pred.values
+
+    path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                        data_type, age_group, start_date, 'post_preds.csv')
+    post_pred += pd.read_csv(path, index_col=0).pred.values
+
+    path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                        data_type, age_group, start_date, 'pre_conf_int.csv')
+    pre_conf_int += pd.read_csv(path, index_col=0).values
+
+    args = filter_dates(suicide, preds, plot_start, date_end)
+    fig = plot_preds_ts(*args)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'gender_only', 'unemp_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    fig = plot_induced_suicides_ts(args[0], args[2])
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'gender_only', 'induced_suicides_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    fig = plot_explained_unemp_ts(args[0], args[1], suicide.name)
+    full_path =  os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'gender_only', 'explained_unemp_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'gender_only', 'pre_preds.csv')
+    pre_pred.to_csv(path)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'gender_only', 'post_preds.csv')
+    post_pred.to_csv(path)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'gender_only', 'suicide.csv')
+    suicide.to_csv(path)
+
+    # Age-gender
+    pre_pred[:] = 0.
+    post_pred[:] = 0.
+    pre_conf_int[:] = 0.
+
+    forecast_type = 'group'
+    data_type = 'male'
+
+    for age_group in AGE_GROUPS:
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'pre_preds.csv')
+        pre_pred += pd.read_csv(path, index_col=0).pred.values
+
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'post_preds.csv')
+        post_pred += pd.read_csv(path, index_col=0).pred.values
+
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'pre_conf_int.csv')
+        pre_conf_int += pd.read_csv(path, index_col=0).values
+
+    data_type = 'female'
+
+    for age_group in AGE_GROUPS:
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'pre_preds.csv')
+        pre_pred += pd.read_csv(path, index_col=0).pred.values
+
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'post_preds.csv')
+        post_pred += pd.read_csv(path, index_col=0).pred.values
+
+        path = os.path.join(output_path, analysis_date, 'model', forecast_type,
+                            data_type, age_group, start_date, 'pre_conf_int.csv')
+        pre_conf_int += pd.read_csv(path, index_col=0).values
+
+    args = filter_dates(suicide, preds, plot_start, date_end)
+    fig = plot_preds_ts(*args)
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_gender', 'unemp_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    fig = plot_induced_suicides_ts(args[0], args[2])
+    full_path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_gender', 'induced_suicides_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    fig = plot_explained_unemp_ts(args[0], args[1], suicide.name)
+    full_path =  os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_gender', 'explained_unemp_ts.pdf')
+    fig.write_image(full_path, format='pdf')
+
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_gender', 'pre_preds.csv')
+    pre_pred.to_csv(path)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_gender', 'post_preds.csv')
+    post_pred.to_csv(path)
+    path = os.path.join(output_path, analysis_date, 'result_analysis', 'summary', 'age_gender', 'suicide.csv')
+    suicide.to_csv(path)
+
+
+
 def analyze_results(params, output_path, clean_data_path):
-    summary_table(params, output_path)
-    gen_figs(params, output_path, clean_data_path)
-    gen_reg_analysis(params, output_path, clean_data_path)
+    # summary_table(params, output_path)
+    # gen_figs(params, output_path, clean_data_path)
+    # gen_reg_analysis(params, output_path, clean_data_path)
+    summary_figures(params, output_path, clean_data_path)
 
 
 if __name__ == '__main__':
