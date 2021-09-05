@@ -14,6 +14,7 @@ from model import filter_dates
 # TODO(QBatista):
 # 1. Find better names for the folders
 # 2. Use parameter for generating summaries
+# 3. Clean up the code
 
 
 DATES_START = ('2009-01',
@@ -21,8 +22,11 @@ DATES_START = ('2009-01',
                '2011-01',
                '2012-01')
 UNEMP_TYPES = ('aggregate', 'group')
-AGE_GROUPS = ('0_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79',
-              '80_99')
+AGE_GROUPS = ['0_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79',
+              '80_99']
+
+INFECTIONS_AGE_GROUPS = ['0_19', '20_29', '30_39', '40_49', '50_59', '60_69',
+                         '70_79', '80_89', '90_99']
 DATA_TYPES = ('male', 'female', 'total')
 
 
@@ -83,11 +87,11 @@ def plot_life_exp(params, date_start, unemp_type, output_path, clean_data_path):
         load_data(params, date_start, unemp_type, output_path,
                   clean_data_path)
 
-    suicide_m_le = df_suicide_m.multiply(df_life_exp['male'])
+    suicide_m_le = df_suicide_m.multiply(df_life_exp.loc[AGE_GROUPS, 'male'])
     suicide_m_sum = suicide_m_le.sum(axis=0).rename('Male')
     suicide_m_sum.index = [group.replace('_', ' to ') for group in suicide_m_sum.index]
 
-    suicide_f_le = df_suicide_f.multiply(df_life_exp['female'])
+    suicide_f_le = df_suicide_f.multiply(df_life_exp.loc[AGE_GROUPS, 'female'])
     suicide_f_sum = suicide_f_le.sum(axis=0).rename('Female')
     suicide_f_sum.index = [group.replace('_', ' to ') for group in suicide_f_sum.index]
 
@@ -95,11 +99,16 @@ def plot_life_exp(params, date_start, unemp_type, output_path, clean_data_path):
     suicide_le_total = (suicide_m_sum + suicide_f_sum).rename('Total')
     suicide_le_total.index = [group.replace('_', ' to ') for group in suicide_le_total.index]
 
-    mask = df_infections.age_group.isin(AGE_GROUPS)
+    mask = df_infections.age_group.isin(INFECTIONS_AGE_GROUPS)
     infections_data = df_infections[mask].pivot(columns=['gender_group', 'age_group'], values='value')
 
-    infections_m_le = infections_data['male'].multiply(df_life_exp['male'])
-    infections_f_le = infections_data['female'].multiply(df_life_exp['female'])
+    infections_m_le = infections_data['male'].multiply(df_life_exp.loc[INFECTIONS_AGE_GROUPS, 'male'])
+    infections_m_le['80_99'] = infections_m_le['80_89'] + infections_m_le['90_99']
+    infections_m_le = infections_m_le.loc[:, AGE_GROUPS]
+
+    infections_f_le = infections_data['female'].multiply(df_life_exp.loc[INFECTIONS_AGE_GROUPS, 'female'])
+    infections_f_le['80_99'] = infections_f_le['80_89'] + infections_f_le['90_99']
+    infections_f_le = infections_f_le.loc[:, AGE_GROUPS]
 
     infections_m_le_sum = infections_m_le.sum(axis=0).rename('Male')
     infections_f_le_sum = infections_f_le.sum(axis=0).rename('Female')
@@ -158,11 +167,14 @@ def plot_deaths(params, date_start, unemp_type, output_path, clean_data_path):
     suicide_total = (suicide_m_sum + suicide_f_sum).rename('Total')
     suicide_total.index = [group.replace('_', ' to ') for group in suicide_total.index]
 
-    mask = df_infections.age_group.isin(AGE_GROUPS)
+    mask = df_infections.age_group.isin(INFECTIONS_AGE_GROUPS)
     infections_data = df_infections[mask].pivot(columns=['gender_group', 'age_group'], values='value')
 
-    infections_m = infections_data['male']
-    infections_f = infections_data['female']
+    infections_m = infections_data['male'].copy()
+    infections_m['80_99'] = infections_m['80_89'] + infections_m['90_99']
+
+    infections_f = infections_data['female'].copy()
+    infections_f['80_99'] = infections_f['80_89'] + infections_f['90_99']
 
     infections_m_sum = infections_m.sum(axis=0).rename('Male')
     infections_f_sum = infections_f.sum(axis=0).rename('Female')
@@ -267,7 +279,7 @@ def summary_table(params, output_path):
 
 
     # Age Only
-    df = pd.DataFrame(index= AGE_GROUPS, columns=['actual_minus_pre', 'post_minus_pre_future', 'post_minus_pre_present'])
+    df = pd.DataFrame(index=AGE_GROUPS, columns=['actual_minus_pre', 'post_minus_pre_future', 'post_minus_pre_present'])
 
     forecast_type = 'group'
     data_type = 'total'
@@ -611,9 +623,9 @@ def summary_figures(params, output_path, clean_data_path):
 
 
 def analyze_results(params, output_path, clean_data_path):
-    # summary_table(params, output_path)
-    # gen_figs(params, output_path, clean_data_path)
-    # gen_reg_analysis(params, output_path, clean_data_path)
+    summary_table(params, output_path)
+    gen_figs(params, output_path, clean_data_path)
+    gen_reg_analysis(params, output_path, clean_data_path)
     summary_figures(params, output_path, clean_data_path)
 
 

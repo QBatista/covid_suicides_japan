@@ -15,7 +15,7 @@ AGE_GROUPS = GROUPS[:-4]
 OLD_GROUPS = ['60_69', '70_79', '80_89', '90_99']
 GENDERS = ['male', 'female', 'undisclosed']
 OUTPUT_GROUPS = ['0_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79',
-                 '80_99', 'total']
+                 '80_89', '90_99', 'total']
 α = 1  # Laplace smoothing
 
 
@@ -152,13 +152,9 @@ def infections(params, load_path, save_path):
     # Aggregate some age groups
     c = ('male', '0_19')
     df_month.loc[:, c] = df_month.male[['0_9', '10_19']].sum(axis=1)
-    c = ('male', '80_99')
-    df_month.loc[:, c] = df_month.male[['80_89', '90_99']].sum(axis=1)
 
     c = ('female', '0_19')
     df_month.loc[:, c] = df_month.female[['0_9', '10_19']].sum(axis=1)
-    c = ('female', '80_99')
-    df_month.loc[:, c] = df_month.female[['80_89', '90_99']].sum(axis=1)
 
     # Select output groups
     output_cols = [(g, a) for g in ['male', 'female'] for a in OUTPUT_GROUPS]
