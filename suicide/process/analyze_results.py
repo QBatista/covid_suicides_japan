@@ -109,7 +109,6 @@ def plot_life_exp(params, date_start, unemp_type, output_path, clean_data_path):
     infections_data = df_infections[mask].pivot(columns=['gender_group', 'age_group'], values='value')
     infections_data = infections_data[:last_date]
 
-
     infections_m_le = infections_data['male'].multiply(df_life_exp.loc[INFECTIONS_AGE_GROUPS, 'male'])
     infections_m_le['80_99'] = infections_m_le['80_89'] + infections_m_le['90_99']
     infections_m_le = infections_m_le.loc[:, AGE_GROUPS]
@@ -180,9 +179,11 @@ def plot_deaths(params, date_start, unemp_type, output_path, clean_data_path):
 
     infections_m = infections_data['male'].copy()
     infections_m['80_99'] = infections_m['80_89'] + infections_m['90_99']
+    infections_m = infections_m.loc[:, AGE_GROUPS]
 
     infections_f = infections_data['female'].copy()
     infections_f['80_99'] = infections_f['80_89'] + infections_f['90_99']
+    infections_f = infections_f.loc[:, AGE_GROUPS]
 
     infections_m_sum = infections_m.sum(axis=0).rename('Male')
     infections_f_sum = infections_f.sum(axis=0).rename('Female')
