@@ -4,10 +4,11 @@ A script to generate figures for the model's predictions.
 """
 
 import os
+import sys
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-from util.plot import *
+from .util.plot import *
 
 
 # TODO(QBatista):

@@ -1,14 +1,15 @@
 
 
 import os
+import sys
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from load_data import load_suicide_data
-from util.plot import *
-from model import filter_dates
+from .load_data import load_suicide_data
+from .util.plot import *
+from .model import filter_dates
 
 
 # TODO(QBatista):
